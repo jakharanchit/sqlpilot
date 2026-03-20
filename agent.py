@@ -148,30 +148,20 @@ def _auto_fetch_schemas(query: str):
 @app.command()
 def analyze(
     query: str = typer.Argument(..., help="SQL query to optimize"),
-    context: str = typer.Option(
-        "This query is used by a LabVIEW dashboard for data display.",
-        "--context", "-c",
-        help="Context about how this query is used"
-    ),
 ):
-    """Optimize a SQL query — auto-detects tables and pulls schema."""
+    """Optimize a SQL query — auto-detects tables, fetches execution plan, runs AI pipeline."""
     _banner()
     from tools.optimizer import optimize_query
 
     schema_list = _auto_fetch_schemas(query)
-    optimize_query(query, schema_list, context=context)
+    optimize_query(query, schema_list)
 
 
 @app.command()
 def optimize_file(
     path: str = typer.Argument(..., help="Path to .sql file to optimize"),
-    context: str = typer.Option(
-        "This query is used by a LabVIEW dashboard for data display.",
-        "--context", "-c",
-        help="Context about how this query is used"
-    ),
 ):
-    """Optimize a .sql file — reads file, auto-detects tables, runs optimization."""
+    """Optimize a .sql file — reads file, auto-detects tables, runs full AI pipeline."""
     _banner()
     from pathlib import Path
     from tools.optimizer import optimize_query
@@ -185,7 +175,7 @@ def optimize_file(
     console.print(f"[cyan]→ Loaded:[/cyan] {sql_path.name} ({len(query)} chars)\n")
 
     schema_list = _auto_fetch_schemas(query)
-    optimize_query(query, schema_list, context=context)
+    optimize_query(query, schema_list)
 
 
 @app.command()
@@ -245,6 +235,123 @@ def workload(
     schema_list = _auto_fetch_schemas(combined)
 
     generate_index_scripts(queries, schema_list)
+
+
+
+# ============================================================
+# PHASE 3 COMMANDS — benchmarking
+# ============================================================
+
+@app.command()
+def benchmark(
+    before: str  = typer.Option(...,   "--before", "-b", help="Original (slow) query"),
+    after:  str  = typer.Option(...,   "--after",  "-a", help="Optimized query"),
+    label:  str  = typer.Option("Query", "--label", "-l", help="Name for this benchmark"),
+    runs:   int  = typer.Option(None,  "--runs",   "-r", help="Number of runs (default from config.py)"),
+    save:   bool = typer.Option(False, "--save",   "-s", help="Save result to reports/"),
+):
+    """
+    Compare before vs after query timing. Runs each N times and shows stats.
+
+    Example:
+        python agent.py benchmark \\
+          --before "SELECT * FROM vw_dashboard WHERE machine_id=1" \\
+          --after  "SELECT id, val FROM measurements WITH(NOLOCK) WHERE machine_id=1" \\
+          --label  "dashboard filter" --save
+    """
+    _banner()
+    from tools.benchmarker import benchmark_query, save_benchmark
+    result = benchmark_query(
+        original_query  = before,
+        optimized_query = after,
+        label           = label,
+        runs            = runs,
+    )
+    if save and "error" not in result:
+        save_benchmark(result)
+
+
+@app.command()
+def baseline(
+    query: str = typer.Argument(...,      help="Query to time before optimizing"),
+    label: str = typer.Option("Query",   "--label", "-l", help="Name for this baseline"),
+    runs:  int = typer.Option(None,      "--runs",  "-r", help="Number of runs"),
+):
+    """
+    Time a single query to establish a baseline before optimizing.
+
+    Example:
+        python agent.py baseline "SELECT * FROM vw_dashboard" --label "dashboard"
+    """
+    _banner()
+    from tools.benchmarker import benchmark_single
+    benchmark_single(query, label=label, runs=runs)
+
+
+@app.command()
+def benchmark_files(
+    before_file: str  = typer.Argument(...,      help="Path to original .sql file"),
+    after_file:  str  = typer.Argument(...,      help="Path to optimized .sql file"),
+    label:       str  = typer.Option("Query",   "--label", "-l", help="Name for benchmark"),
+    runs:        int  = typer.Option(None,      "--runs",  "-r", help="Number of runs"),
+    save:        bool = typer.Option(False,     "--save",  "-s", help="Save to reports/"),
+):
+    """
+    Compare two .sql files — original vs optimized.
+
+    Example:
+        python agent.py benchmark-files queries/original.sql queries/optimized.sql --save
+    """
+    _banner()
+    from pathlib import Path
+    from tools.benchmarker import benchmark_query, save_benchmark
+
+    for p in [before_file, after_file]:
+        if not Path(p).exists():
+            console.print(f"[red]✗ File not found: {p}[/red]")
+            raise typer.Exit(1)
+
+    before_sql = Path(before_file).read_text(encoding="utf-8").strip()
+    after_sql  = Path(after_file).read_text(encoding="utf-8").strip()
+
+    console.print(f"[cyan]→ Before:[/cyan] {Path(before_file).name}")
+    console.print(f"[cyan]→ After:[/cyan]  {Path(after_file).name}\n")
+
+    result = benchmark_query(before_sql, after_sql, label=label, runs=runs)
+    if save and "error" not in result:
+        save_benchmark(result)
+
+
+# ============================================================
+# RUN LOGS — list and view saved run logs
+# ============================================================
+
+@app.command()
+def runs(
+    run_type: str = typer.Option(None, "--type", "-t", help="Filter: optimize, benchmark, plan, view"),
+    limit:    int = typer.Option(10,   "--limit", "-n", help="Max results to show"),
+):
+    """List recent run logs saved in runs/ folder."""
+    _banner()
+    from tools.logger import list_runs
+    from rich.table import Table as RichTable
+
+    results = list_runs(run_type=run_type, limit=limit)
+
+    if not results:
+        console.print("[yellow]No run logs found. Run an optimization first.[/yellow]")
+        return
+
+    table = RichTable(show_header=True, header_style="bold cyan")
+    table.add_column("Date",     style="dim",   min_width=16)
+    table.add_column("Filename", min_width=45)
+    table.add_column("Size",     justify="right", style="dim")
+
+    for r in results:
+        table.add_row(r["date"], r["filename"], f"{r['size_kb']}KB")
+
+    console.print(table)
+    console.print(f"\n[dim]Logs are in: runs/  — open any .md file to read the full run details[/dim]")
 
 
 # ============================================================
