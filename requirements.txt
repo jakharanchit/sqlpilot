@@ -1,0 +1,22 @@
+# SQL Agent Toolkit — Python Dependencies
+# Install all with: pip install -r requirements.txt
+
+# Core agent framework
+langchain>=0.2.0
+langchain-community>=0.2.0
+langchain-ollama>=0.1.0
+
+# SQL Server connection
+pyodbc>=5.0.0
+sqlalchemy>=2.0.0
+
+# CLI interface (makes the terminal output clean)
+typer>=0.12.0
+rich>=13.0.0
+
+# Git automation
+gitpython>=3.1.40
+
+# Utilities
+python-dotenv>=1.0.0     # optional: load secrets from .env file
+tabulate>=0.9.0          # table formatting in reports
