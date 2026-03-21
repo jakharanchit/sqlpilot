@@ -1,5 +1,5 @@
 {
-  "last_number": 1,
+  "last_number": 2,
   "migrations": {
     "1": {
       "number": 1,
@@ -15,6 +15,26 @@
         "ItemLabels"
       ],
       "reason": "Here's a step-by-step explanation of the issues affecting the query performance:",
+      "before_ms": null,
+      "after_ms": null,
+      "improvement_pct": null,
+      "status": "pending",
+      "applied_to": []
+    },
+    "2": {
+      "number": 2,
+      "filename": "002_optimize_select_top_1000_testrequestidte.sql",
+      "description": "optimize: SELECT TOP (1000) [testRequestID],[testRequestDate",
+      "date": "2026-03-21 09:35:30",
+      "client": "client_example1",
+      "tables_affected": [
+        "Labels",
+        "Parts",
+        "TestRequests",
+        "Tests",
+        "ItemLabels"
+      ],
+      "reason": "Here's a step-by-step explanation of the performance issues in the provided SQL query and their potential fixes:",
       "before_ms": null,
       "after_ms": null,
       "improvement_pct": null,

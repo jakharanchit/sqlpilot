@@ -339,8 +339,9 @@ Produce:
     _ok(f"{len(index_scripts)} index script(s) extracted") if index_scripts else _info("No CREATE INDEX scripts in response")
 
     # ── Step 8 ──────────────────────────────────────────────
-    _step(8, TOTAL, "Saving full run log to runs/")
+    _step(8, TOTAL, "Saving run log · generating migration · committing to Git")
 
+    # 8a — Save run log
     try:
         from tools.logger import log_optimization
         log_path = log_optimization(
@@ -355,9 +356,35 @@ Produce:
         )
         result["log_path"] = log_path
         name = log_path.split("runs/")[-1] if "runs/" in log_path else log_path
-        _ok(f"Saved: runs/{name}")
+        _ok(f"Run log saved: runs/{name}")
     except Exception as e:
-        _warn(f"Could not save log: {e}")
+        _warn(f"Could not save run log: {e}")
+
+    # 8b — Auto-generate migration file if index scripts exist
+    migration_result = None
+    if index_scripts:
+        try:
+            from tools.migrator import migration_from_optimization
+            _info("Index scripts found — generating migration file...")
+            migration_result = migration_from_optimization(result)
+            result["migration"] = migration_result
+        except Exception as e:
+            _warn(f"Could not generate migration: {e}")
+    else:
+        _info("No schema changes (no CREATE INDEX) — migration not generated")
+        result["migration"] = None
+
+    # 8c — Auto Git commit
+    try:
+        from tools.git_manager import commit_optimization
+        tables_str = ", ".join([s["table_name"] for s in schema_list])
+        migration_path = result.get("migration", {}).get("path") if result.get("migration") else None
+        commit_optimization(
+            query_label    = tables_str,
+            migration_path = migration_path,
+        )
+    except Exception as e:
+        _warn(f"Could not auto-commit: {e}")
 
     # ── Step 9 ──────────────────────────────────────────────
     _step(9, TOTAL, "Done — displaying results")

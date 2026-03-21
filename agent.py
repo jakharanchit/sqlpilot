@@ -4,14 +4,15 @@
 # Main entry point. Run everything from here.
 # ============================================================
 # USAGE EXAMPLES:
-#   python agent.py test-connection
-#   python agent.py list-objects
-#   python agent.py schema measurements
+#   python agent.py full-run --query "SELECT * FROM vw_dashboard WHERE id=1"
+#   python agent.py full-run --folder queries/
 #   python agent.py analyze "SELECT * FROM vw_dashboard WHERE machine_id=1"
 #   python agent.py optimize-file queries/labview.sql
 #   python agent.py optimize-view vw_dashboard
-#   python agent.py plan plans/slow_query.sqlplan
-#   python agent.py workload queries/
+#   python agent.py benchmark --before "..." --after "..."
+#   python agent.py deploy
+#   python agent.py migrations
+#   python agent.py git-log
 # ============================================================
 
 import typer
@@ -28,6 +29,60 @@ def _banner():
         "[dim]Offline · Local · Powered by Ollama[/dim]",
         border_style="cyan"
     ))
+
+
+
+# ============================================================
+# FULL-RUN PIPELINE — single command does everything
+# ============================================================
+
+@app.command()
+def full_run(
+    query:       str  = typer.Option(None,  "--query",     "-q", help="Single SQL query to run through full pipeline"),
+    folder:      str  = typer.Option(None,  "--folder",    "-f", help="Folder of .sql files for batch processing"),
+    runs:        int  = typer.Option(None,  "--runs",      "-r", help="Benchmark runs per query (default from config.py)"),
+    no_deploy:   bool = typer.Option(False, "--no-deploy",       help="Skip deployment package generation"),
+    label:       str  = typer.Option("",    "--label",     "-l", help="Short name for this run (used in filenames)"),
+):
+    """
+    Full pipeline: optimize → benchmark → migrate → report → deploy package.
+
+    Single query:
+        python agent.py full-run --query "SELECT * FROM vw_dashboard WHERE machine_id=1"
+
+    Batch folder:
+        python agent.py full-run --folder queries/
+
+    Skip deployment package (just optimize + benchmark + migrate):
+        python agent.py full-run --query "SELECT ..." --no-deploy
+    """
+    _banner()
+
+    if not query and not folder:
+        console.print("[red]✗ Provide either --query or --folder[/red]")
+        console.print("  Example: [cyan]python agent.py full-run --query \"SELECT * FROM your_table\"[/cyan]")
+        console.print("  Example: [cyan]python agent.py full-run --folder queries/[/cyan]")
+        raise typer.Exit(1)
+
+    if query and folder:
+        console.print("[red]✗ Provide either --query or --folder, not both[/red]")
+        raise typer.Exit(1)
+
+    from tools.pipeline import run_single, run_batch
+
+    if query:
+        run_single(
+            query          = query,
+            label          = label,
+            benchmark_runs = runs,
+            skip_deploy    = no_deploy,
+        )
+    else:
+        run_batch(
+            folder         = folder,
+            benchmark_runs = runs,
+            skip_deploy    = no_deploy,
+        )
 
 
 # ============================================================
@@ -322,6 +377,376 @@ def benchmark_files(
         save_benchmark(result)
 
 
+
+
+
+
+# ============================================================
+# PHASE 2.7 — TUI
+# ============================================================
+
+@app.command()
+def ui():
+    """
+    Launch the Terminal UI — OpenCode-style four-panel interface.
+
+    Panels:
+      Top-left     Schema tree (tables + views, click to inspect)
+      Top-right    Live output (pipeline steps stream here)
+      Bottom-left  Recent runs (last 8 from history.db)
+      Bottom-right Progress bar + query input
+
+    Keyboard shortcuts:
+      a   Analyze / Full-run a query
+      f   Batch full-run on queries/ folder
+      r   Refresh schema tree
+      d   Generate deployment package
+      h   View run history
+      w   Run schema watcher
+      s   Take schema snapshot
+      q   Quit
+
+    Requires: pip install textual
+    """
+    try:
+        from tui.app import run_tui
+        run_tui()
+    except ImportError:
+        console.print("[red]✗ Textual not installed[/red]")
+        console.print("  Install with: [cyan]pip install textual[/cyan]")
+        console.print("  Then run:     [cyan]python agent.py ui[/cyan]")
+
+
+# ============================================================
+# PHASE 2.6 COMMANDS — schema watcher
+# ============================================================
+
+@app.command()
+def watch(
+    force: bool = typer.Option(False, "--force", "-f",
+                               help="Re-run even if already ran today"),
+):
+    """
+    Run the schema watcher — diffs today's schema against yesterday.
+    Alerts you to changes that could break existing optimizations.
+
+    Schedule this to run automatically every morning:
+        python agent.py watch-schedule
+    """
+    _banner()
+    from tools.watcher import run_watch
+    run_watch(force=force)
+
+
+@app.command()
+def watch_report():
+    """Show the most recent schema watch report."""
+    _banner()
+    from tools.watcher import print_last_watch_report
+    print_last_watch_report()
+
+
+@app.command()
+def watch_schedule():
+    """
+    Generate Windows Task Scheduler files to run the watcher
+    automatically every morning at 07:00.
+
+    After running this command, follow the instructions in
+    scheduler/README.md to register the scheduled task.
+    """
+    _banner()
+    from tools.watcher import generate_scheduler_script
+    from rich.panel import Panel as RPanel
+
+    setup_dir = generate_scheduler_script()
+
+    console.print()
+    console.print(RPanel(
+        f"[bold green]✓ Scheduler files generated[/bold green]\n"
+        f"[dim]{setup_dir}[/dim]",
+        border_style="green", expand=False,
+    ))
+    console.print("\n[bold]To register the daily task:[/bold]")
+    console.print("  1. Open PowerShell [bold]as Administrator[/bold]")
+    console.print("  2. Run:")
+    console.print(f"     [cyan]cd {setup_dir}[/cyan]")
+    console.print("     [cyan]Set-ExecutionPolicy RemoteSigned -Scope CurrentUser[/cyan]")
+    console.print("     [cyan].\\register_task.ps1[/cyan]")
+    console.print("\n  Watcher will run every morning at [bold]07:00[/bold]")
+    console.print("  Check results with: [cyan]python agent.py watch-report[/cyan]")
+
+
+@app.command()
+def snapshot():
+    """Take a manual schema snapshot without running the diff."""
+    _banner()
+    from tools.watcher import take_snapshot, save_snapshot
+
+    console.print("[cyan]→ Taking schema snapshot...[/cyan]")
+    try:
+        snap  = take_snapshot()
+        paths = save_snapshot(snap)
+        console.print(
+            f"\n[green]✓ Snapshot saved[/green]  "
+            f"[dim]{Path(paths['dated']).name}[/dim]"
+        )
+        console.print(
+            f"  Tables: {len(snap['tables'])}  "
+            f"Views: {len(snap['views'])}"
+        )
+    except Exception as e:
+        console.print(f"[red]✗ Snapshot failed: {e}[/red]")
+
+
+# ============================================================
+# PHASE 2.5 COMMANDS — history, trends, comparison
+# ============================================================
+
+@app.command()
+def history(
+    query:      str  = typer.Option(None,  "--query",  "-q", help="Filter by query text or label"),
+    table:      str  = typer.Option(None,  "--table",  "-t", help="Filter by table or view name"),
+    limit:      int  = typer.Option(20,    "--limit",  "-n", help="Max results"),
+    top:        bool = typer.Option(False, "--top",         help="Show top improvements only"),
+    regressions:bool = typer.Option(False, "--regressions", help="Show runs that got worse"),
+    stats:      bool = typer.Option(False, "--stats",       help="Show overall statistics"),
+):
+    """
+    View run history, trends, and statistics.
+
+    Examples:
+        python agent.py history
+        python agent.py history --table vw_dashboard
+        python agent.py history --query "machine filter"
+        python agent.py history --top
+        python agent.py history --regressions
+        python agent.py history --stats
+    """
+    _banner()
+    from tools.history import (
+        get_history, get_top_improvements, get_regressions,
+        get_stats, print_history, print_stats
+    )
+
+    if stats:
+        s = get_stats()
+        print_stats(s)
+        return
+
+    if top:
+        runs = get_top_improvements(limit=limit)
+        print_history(runs, title=f"Top {limit} Improvements")
+        return
+
+    if regressions:
+        runs = get_regressions()
+        if not runs:
+            console.print("[green]✓ No regressions found — all optimizations improved performance[/green]")
+        else:
+            print_history(runs, title="Regressions (optimized query was slower)")
+        return
+
+    runs = get_history(query=query, table_name=table, limit=limit)
+    title = "Run History"
+    if query: title += f" — query: {query}"
+    if table: title += f" — table: {table}"
+    print_history(runs, title=title)
+
+    if not runs:
+        console.print("[dim]Run some optimizations first, or try: python agent.py full-run --query '...'[/dim]")
+
+
+@app.command()
+def trend(
+    table: str = typer.Option(None, "--table", "-t", help="Table or view name to show trend for"),
+    query: str = typer.Option(None, "--query", "-q", help="Query text to match"),
+):
+    """
+    Show improvement trend for a specific table or query over time.
+
+    Examples:
+        python agent.py trend --table vw_dashboard
+        python agent.py trend --query "machine filter"
+    """
+    _banner()
+    from tools.history import get_trend, get_history, print_trend, _fingerprint
+
+    if not table and not query:
+        console.print("[red]✗ Provide --table or --query[/red]")
+        console.print("  Example: [cyan]python agent.py trend --table vw_dashboard[/cyan]")
+        raise typer.Exit(1)
+
+    if query:
+        # Find matching runs then group by query hash
+        runs = get_history(query=query, limit=50)
+        if runs:
+            # Get the hash from the first match and show trend for that hash
+            from tools.history import get_trend as _get_trend
+            runs = _get_trend(query_hash=runs[0]["query_hash"])
+            print_trend(runs, label=query)
+        else:
+            console.print(f"[yellow]No runs found matching: {query}[/yellow]")
+    else:
+        from tools.history import get_trend as _get_trend
+        runs = _get_trend(table_name=table)
+        print_trend(runs, label=table)
+
+
+@app.command()
+def compare(
+    run_a: int = typer.Argument(..., help="ID of first run (from history command)"),
+    run_b: int = typer.Argument(..., help="ID of second run"),
+):
+    """
+    Compare two specific runs side by side.
+
+    First find run IDs with:
+        python agent.py history --table vw_dashboard
+
+    Then compare:
+        python agent.py compare 3 12
+    """
+    _banner()
+    from tools.history import compare_runs, print_compare
+    comparison = compare_runs(run_a, run_b)
+    print_compare(comparison)
+
+
+# ============================================================
+# PHASE 2.1 COMMANDS — migrations and Git
+# ============================================================
+
+@app.command()
+def migrations(
+    status: str = typer.Option(None, "--status", "-s",
+                               help="Filter by: pending, applied, rolled_back"),
+):
+    """List all migration files and their status."""
+    _banner()
+    from tools.migrator import list_migrations
+    from rich.table import Table as RichTable
+
+    items = list_migrations(status_filter=status)
+
+    if not items:
+        msg = f"No {status} migrations found." if status else "No migrations found yet."
+        console.print(f"[yellow]{msg}[/yellow]")
+        console.print("[dim]Migrations are generated automatically after each optimization.[/dim]")
+        return
+
+    table = RichTable(show_header=True, header_style="bold cyan")
+    table.add_column("#",           justify="right",  style="dim",   width=5)
+    table.add_column("Description", min_width=35)
+    table.add_column("Date",        style="dim",       min_width=16)
+    table.add_column("Tables",      style="cyan",      min_width=20)
+    table.add_column("Improvement", justify="right")
+    table.add_column("Status",      justify="center")
+
+    for m in items:
+        improvement = (
+            f"[green]{m['improvement_pct']}%[/green]"
+            if m.get("improvement_pct") else "[dim]—[/dim]"
+        )
+        status_col = {
+            "pending":     "[yellow]pending[/yellow]",
+            "applied":     "[green]applied[/green]",
+            "rolled_back": "[red]rolled back[/red]",
+        }.get(m["status"], m["status"])
+
+        table.add_row(
+            str(m["number"]),
+            m["description"],
+            m["date"][:16],
+            ", ".join(m.get("tables_affected", []))[:25],
+            improvement,
+            status_col,
+        )
+
+    console.print(table)
+    pending = sum(1 for m in items if m["status"] == "pending")
+    if pending:
+        console.print(
+            f"\n[yellow]{pending} pending migration(s)[/yellow] — "
+            f"[dim]apply these before generating a deployment package[/dim]"
+        )
+
+
+@app.command()
+def mark_applied(
+    number: int = typer.Argument(..., help="Migration number to mark as applied"),
+    client: str = typer.Option(None, "--client", "-c", help="Client name (default: from config.py)"),
+):
+    """Mark a migration as applied to a client system."""
+    _banner()
+    from tools.migrator import mark_applied as _mark
+    _mark(number, client)
+
+
+@app.command()
+def mark_rolled_back(
+    number: int = typer.Argument(..., help="Migration number to mark as rolled back"),
+):
+    """Mark a migration as rolled back."""
+    _banner()
+    from tools.migrator import mark_rolled_back as _rollback
+    _rollback(number)
+
+
+@app.command()
+def git_log(
+    limit: int = typer.Option(10, "--limit", "-n", help="Number of commits to show"),
+):
+    """Show recent Git commits made by the agent."""
+    _banner()
+    from tools.git_manager import get_recent_commits, get_status
+    from rich.table import Table as RichTable
+
+    status = get_status()
+    if "error" not in status:
+        console.print(
+            f"[dim]Branch: [cyan]{status['branch']}[/cyan]  "
+            f"{'[yellow]Uncommitted changes[/yellow]' if status['is_dirty'] else '[green]Clean[/green]'}[/dim]\n"
+        )
+
+    commits = get_recent_commits(limit)
+    if not commits:
+        console.print("[yellow]No commits found. Run: git init[/yellow]")
+        return
+
+    table = RichTable(show_header=True, header_style="bold cyan")
+    table.add_column("Hash",    style="dim",   width=8)
+    table.add_column("Type",    style="cyan",  width=12)
+    table.add_column("Message", min_width=45)
+    table.add_column("Date",    style="dim",   min_width=16)
+
+    type_colors = {
+        "optimize":  "green",
+        "migrate":   "cyan",
+        "benchmark": "yellow",
+        "deploy":    "magenta",
+        "watch":     "red",
+        "baseline":  "blue",
+    }
+    for c in commits:
+        color = type_colors.get(c["type"], "white")
+        table.add_row(
+            c["hash"],
+            f"[{color}]{c['type']}[/{color}]",
+            c["message"][len(f"[{c['type']}] "):].splitlines()[0][:60],
+            c["date"],
+        )
+    console.print(table)
+
+
+@app.command()
+def git_init():
+    """Initialize Git in the project if not already done."""
+    _banner()
+    from tools.git_manager import init_git_if_needed
+    init_git_if_needed()
+
+
 # ============================================================
 # RUN LOGS — list and view saved run logs
 # ============================================================
@@ -360,12 +785,43 @@ def runs(
 
 @app.command()
 def deploy(
-    client: str = typer.Option(..., help="Client name to deploy to")
+    client:      str  = typer.Option(None,  "--client",  "-c",  help="Client name (default: from config.py)"),
+    include_all: bool = typer.Option(False, "--all",     "-a",  help="Include already-applied migrations too"),
 ):
-    """[Phase 6] Generate client deployment package."""
+    """Generate a full client deployment package — deploy.sql, rollback.sql, walkthrough, report."""
     _banner()
-    console.print(f"[yellow]⏳ Deployment packager — coming in Phase 6[/yellow]")
-    console.print(f"Client: [dim]{client}[/dim]")
+    from tools.reporter import generate_deployment_package
+    generate_deployment_package(client=client, include_all=include_all)
+
+
+@app.command()
+def report(
+    query:   str = typer.Option(None, "--query",  "-q", help="Query to include in report"),
+    open_it: bool = typer.Option(False, "--open", "-o", help="Open report in default viewer after saving"),
+):
+    """Generate a quick report from the last optimization run."""
+    _banner()
+    from tools.logger import list_runs
+    from pathlib import Path
+
+    # Find most recent optimization run log
+    recent = list_runs(run_type="query", limit=1)
+    if not recent:
+        recent = list_runs(limit=1)
+
+    if not recent:
+        console.print("[yellow]No run logs found. Run an optimization first.[/yellow]")
+        return
+
+    log_path = recent[0]["path"]
+    console.print(f"[cyan]→ Using run log:[/cyan] {recent[0]['filename']}")
+    console.print(f"[dim]  {recent[0]['date']} · {recent[0]['size_kb']}KB[/dim]\n")
+
+    # Read and display the run log as the report
+    content = Path(log_path).read_text(encoding="utf-8")
+    console.print(content)
+
+    console.print(f"\n[dim]Full log: {log_path}[/dim]")
 
 
 @app.command()
