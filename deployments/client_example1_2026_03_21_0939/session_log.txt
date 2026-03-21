@@ -1,5 +1,0 @@
-SESSION LOG — client_example1
-Package: client_example1_2026_03_21_0939
-Generated: 2026-03-21 09:39:03
-============================================================
-(This file is written during deployment)
