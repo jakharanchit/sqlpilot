@@ -33,11 +33,25 @@ from rich.console import Console
 from rich.rule import Rule
 from rich.table import Table
 
-from config import HISTORY_DB, MODELS, ACTIVE_CLIENT
+from config import HISTORY_DB as _GLOBAL_HISTORY_DB, MODELS, ACTIVE_CLIENT as _GLOBAL_CLIENT
+
+def _get_history_db():
+    try:
+        from tools.client_manager import get_client_paths
+        return get_client_paths()["history_db"]
+    except Exception:
+        return _GLOBAL_HISTORY_DB
+
+def _get_active_client():
+    try:
+        from tools.client_manager import get_active_client
+        return get_active_client()
+    except Exception:
+        return _GLOBAL_CLIENT
 
 console = Console()
 
-DB_PATH = Path(HISTORY_DB)
+DB_PATH = None  # resolved per-call via _get_history_db()
 
 
 # ============================================================
@@ -46,9 +60,10 @@ DB_PATH = Path(HISTORY_DB)
 
 def _get_conn() -> sqlite3.Connection:
     """Return a SQLite connection, creating the DB and tables if needed."""
-    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row   # access columns by name
+    db_path = Path(_get_history_db())
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(str(db_path))
+    conn.row_factory = sqlite3.Row
     _ensure_schema(conn)
     return conn
 
@@ -80,73 +95,12 @@ def _ensure_schema(conn: sqlite3.Connection):
             notes            TEXT
         );
 
-        CREATE TABLE IF NOT EXISTS jobs (
-            id           TEXT PRIMARY KEY,
-            type         TEXT NOT NULL,
-            status       TEXT NOT NULL,
-            payload      TEXT,
-            result       TEXT,
-            error        TEXT,
-            created_at   TEXT NOT NULL,
-            started_at   TEXT,
-            finished_at  TEXT
-        );
-
         CREATE INDEX IF NOT EXISTS idx_query_hash  ON runs (query_hash);
         CREATE INDEX IF NOT EXISTS idx_timestamp   ON runs (timestamp);
         CREATE INDEX IF NOT EXISTS idx_client      ON runs (client);
         CREATE INDEX IF NOT EXISTS idx_tables      ON runs (tables_involved);
-        CREATE INDEX IF NOT EXISTS idx_job_status  ON jobs (status);
     """)
     conn.commit()
-
-
-# ============================================================
-# JOB REGISTRY API
-# ============================================================
-
-def create_job(job_id: str, job_type: str, payload: dict) -> str:
-    """Create a new pending job."""
-    import json
-    conn = _get_conn()
-    conn.execute(\"\"\"
-        INSERT INTO jobs (id, type, status, payload, created_at)
-        VALUES (?, ?, 'pending', ?, ?)
-    \"\"\", (job_id, job_type, json.dumps(payload), datetime.now().isoformat()))
-    conn.commit()
-    conn.close()
-    return job_id
-
-def update_job(job_id: str, status: str, result: dict = None, error: str = None):
-    """Update job status and results."""
-    import json
-    conn = _get_conn()
-    now  = datetime.now().isoformat()
-    
-    if status == 'running':
-        conn.execute(\"UPDATE jobs SET status = ?, started_at = ? WHERE id = ?\", (status, now, job_id))
-    elif status in ('completed', 'failed'):
-        conn.execute(\"\"\"
-            UPDATE jobs 
-            SET status = ?, result = ?, error = ?, finished_at = ? 
-            WHERE id = ?
-        \"\"\", (status, json.dumps(result) if result else None, error, now, job_id))
-    
-    conn.commit()
-    conn.close()
-
-def get_job(job_id: str) -> dict:
-    """Fetch job details."""
-    import json
-    conn = _get_conn()
-    row = conn.execute(\"SELECT * FROM jobs WHERE id = ?\", (job_id,)).fetchone()
-    conn.close()
-    if row:
-        d = dict(row)
-        if d['payload']: d['payload'] = json.loads(d['payload'])
-        if d['result']:  d['result'] = json.loads(d['result'])
-        return d
-    return None
 
 
 # ============================================================
@@ -242,7 +196,7 @@ def record_run(
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        ACTIVE_CLIENT,
+        _get_active_client(),
         run_type,
         label or "",
         query_preview,

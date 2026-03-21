@@ -32,11 +32,25 @@ from pathlib import Path
 
 from rich.console import Console
 
-from config import MIGRATIONS_DIR, ACTIVE_CLIENT
+from config import MIGRATIONS_DIR as _GLOBAL_MIGRATIONS_DIR, ACTIVE_CLIENT as _GLOBAL_CLIENT
+
+def _get_migrations_dir():
+    try:
+        from tools.client_manager import get_client_paths
+        return get_client_paths()["migrations"]
+    except Exception:
+        return _GLOBAL_MIGRATIONS_DIR
+
+def _get_active_client():
+    try:
+        from tools.client_manager import get_active_client
+        return get_active_client()
+    except Exception:
+        return _GLOBAL_CLIENT
 
 console = Console()
 
-MIGRATIONS_PATH = Path(MIGRATIONS_DIR)
+MIGRATIONS_PATH = Path(_get_migrations_dir())
 REGISTRY_PATH   = MIGRATIONS_PATH / "registry.json"
 
 
@@ -231,7 +245,7 @@ ORDER BY create_date DESC;
         "filename":        filename,
         "description":     description,
         "date":            timestamp,
-        "client":          ACTIVE_CLIENT,
+        "client":          _get_active_client(),
         "tables_affected": tables_affected or [],
         "reason":          reason_text,
         "before_ms":       before_ms,
@@ -398,7 +412,7 @@ def mark_applied(migration_number: int, client: str = None):
         console.print(f"[red]✗ Migration {migration_number:03d} not found in registry[/red]")
         return False
 
-    client_name = client or ACTIVE_CLIENT
+    client_name = client or _get_active_client()
     m           = registry["migrations"][key]
 
     m["status"] = "applied"
@@ -433,5 +447,5 @@ def get_pending_migrations() -> list:
     return [
         m for m in all_migrations
         if m["status"] == "pending"
-        or ACTIVE_CLIENT not in m.get("applied_to", [])
+        or _get_active_client() not in m.get("applied_to", [])
     ]

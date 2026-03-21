@@ -29,12 +29,33 @@ from rich.console import Console
 from rich.panel import Panel
 
 from config import (
-    ACTIVE_CLIENT,
+    ACTIVE_CLIENT as _GLOBAL_CLIENT,
     BASE_DIR,
-    DEPLOYMENTS_DIR,
-    MIGRATIONS_DIR,
+    DEPLOYMENTS_DIR as _GLOBAL_DEPLOYMENTS_DIR,
+    MIGRATIONS_DIR  as _GLOBAL_MIGRATIONS_DIR,
     DB_CONFIG,
 )
+
+def _get_active_client():
+    try:
+        from tools.client_manager import get_active_client
+        return get_active_client()
+    except Exception:
+        return _GLOBAL_CLIENT
+
+def _get_deployments_dir():
+    try:
+        from tools.client_manager import get_client_paths
+        return get_client_paths()["deployments"]
+    except Exception:
+        return _GLOBAL_DEPLOYMENTS_DIR
+
+def _get_migrations_dir():
+    try:
+        from tools.client_manager import get_client_paths
+        return get_client_paths()["migrations"]
+    except Exception:
+        return _GLOBAL_MIGRATIONS_DIR
 
 console = Console()
 
@@ -74,7 +95,7 @@ def generate_deployment_package(
         migs = list_migrations(status_filter="pending")
         package = generate_deployment_package(migrations=migs)
     """
-    client_name = client or ACTIVE_CLIENT
+    client_name = client or _get_active_client()
 
     console.print()
     console.print(Panel(
@@ -108,7 +129,7 @@ def generate_deployment_package(
 
     ts           = datetime.now().strftime("%Y_%m_%d_%H%M")
     folder_name  = f"{client_name}_{ts}"
-    package_path = Path(DEPLOYMENTS_DIR) / folder_name
+    package_path = Path(_get_deployments_dir()) / folder_name
     package_path.mkdir(parents=True, exist_ok=True)
     _ok(f"deployments/{folder_name}/")
 
@@ -245,7 +266,7 @@ def _build_deploy_sql(migrations: list, client: str) -> str:
         ]
 
         # Read the actual apply SQL from the migration file
-        mig_file = Path(MIGRATIONS_DIR) / m["filename"]
+        mig_file = Path(_get_migrations_dir()) / m["filename"]
         if mig_file.exists():
             apply_sql = _extract_apply_section(mig_file.read_text(encoding="utf-8"))
             lines.append(apply_sql)
@@ -304,7 +325,7 @@ def _build_rollback_sql(migrations: list, client: str) -> str:
             f"",
         ]
 
-        mig_file = Path(MIGRATIONS_DIR) / m["filename"]
+        mig_file = Path(_get_migrations_dir()) / m["filename"]
         if mig_file.exists():
             rollback_sql = _extract_rollback_section(mig_file.read_text(encoding="utf-8"))
             lines.append(rollback_sql)
@@ -461,7 +482,7 @@ def _build_technical_report(migrations: list, client: str) -> str:
             ]
 
         # Include the full migration file content
-        mig_file = Path(MIGRATIONS_DIR) / m["filename"]
+        mig_file = Path(_get_migrations_dir()) / m["filename"]
         if mig_file.exists():
             lines += [
                 f"### Migration File: `{m['filename']}`",
