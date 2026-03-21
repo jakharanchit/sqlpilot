@@ -34,6 +34,340 @@ def _banner():
 
 
 
+
+# ============================================================
+# PHASE 3.5 COMMANDS — LabVIEW query monitor
+# ============================================================
+
+@app.command()
+def lv_monitor(
+    interval: int   = typer.Option(30,   "--interval", "-i",
+                                   help="Polling interval in seconds (default 30)"),
+    limit:    int   = typer.Option(10,   "--limit",    "-n",
+                                   help="Max queries to display (default 10)"),
+    slow:     float = typer.Option(0,    "--slow",     "-s",
+                                   help="Only show queries slower than this ms"),
+):
+    """
+    Live monitor — polls SQL Server every N seconds and shows
+    LabVIEW query performance. No changes to LabVIEW required.
+
+    Make sure LabVIEW is open and connected before running.
+
+    Examples:
+        python agent.py lv-monitor
+        python agent.py lv-monitor --interval 10
+        python agent.py lv-monitor --slow 200
+    """
+    _banner()
+    from tools.lv_monitor import run_live_monitor
+    run_live_monitor(interval_s=interval, limit=limit, threshold_ms=slow)
+
+
+@app.command()
+def lv_snapshot(
+    label:  str  = typer.Option("", "--label", "-l",
+                                help="Label for this snapshot e.g. 'before_test'"),
+    diff:   str  = typer.Option(None, "--diff", "-d",
+                                help="Path to a previous snapshot to diff against"),
+):
+    """
+    Capture a point-in-time snapshot of LabVIEW query performance.
+    Take two snapshots (before/after a session) to see what queries ran.
+
+    Examples:
+        python agent.py lv-snapshot --label "session start"
+        python agent.py lv-snapshot --label "session end" --diff runs/lv_snapshot_before.json
+    """
+    _banner()
+    from tools.lv_monitor import (
+        take_snapshot, diff_snapshots, get_lv_sessions,
+        print_snapshot_report
+    )
+    import json as _json
+
+    sessions = get_lv_sessions()
+    queries  = []
+
+    try:
+        from tools.lv_monitor import get_lv_queries
+        queries = get_lv_queries(limit=20)
+    except Exception as e:
+        console.print(f"[red]✗ Could not read DMVs: {e}[/red]")
+        console.print("[dim]Check VIEW SERVER STATE permission:[/dim]")
+        console.print("  GRANT VIEW SERVER STATE TO [your_login]")
+        raise typer.Exit(1)
+
+    snap = take_snapshot(label=label)
+    console.print(
+        f"[green]✓ Snapshot saved[/green]  "
+        f"[dim]{len(queries)} queries · {len(sessions)} LV session(s)[/dim]"
+    )
+
+    if diff:
+        from pathlib import Path as PPath
+        diff_path = PPath(diff)
+        if not diff_path.exists():
+            console.print(f"[red]✗ Diff file not found: {diff}[/red]")
+            raise typer.Exit(1)
+
+        prev_snap = _json.loads(diff_path.read_text(encoding="utf-8"))
+        changes   = diff_snapshots(prev_snap, snap)
+
+        if not changes:
+            console.print("[green]✓ No new or changed queries between snapshots[/green]")
+        else:
+            console.print(
+                f"\n[bold cyan]{len(changes)} query/queries changed or appeared:[/bold cyan]"
+            )
+            for c in changes:
+                ct = c["change_type"]
+                if ct == "new":
+                    console.print(
+                        f"  [cyan]NEW[/cyan]  {c['avg_ms']}ms avg · "
+                        f"{c['exec_count']} run(s)  —  "
+                        f"[dim]{c['query_preview'][:70]}[/dim]"
+                    )
+                elif ct == "slower":
+                    console.print(
+                        f"  [red]SLOWER[/red]  {c.get('before_avg_ms','?')}ms → "
+                        f"{c['avg_ms']}ms (+{c['ms_delta']}ms)  —  "
+                        f"[dim]{c['query_preview'][:60]}[/dim]"
+                    )
+                else:
+                    console.print(
+                        f"  [dim]MORE RUNS[/dim]  +{c['exec_delta']} runs · "
+                        f"{c['avg_ms']}ms avg  —  "
+                        f"[dim]{c['query_preview'][:65]}[/dim]"
+                    )
+    else:
+        print_snapshot_report(queries, sessions)
+
+
+@app.command()
+def lv_top(
+    limit: int   = typer.Option(10,  "--limit", "-n", help="Number of queries to show"),
+    slow:  float = typer.Option(0,   "--slow",  "-s", help="Only show queries >=Nms"),
+):
+    """
+    Show the top N slowest LabVIEW queries in SQL Server cache.
+
+    Examples:
+        python agent.py lv-top
+        python agent.py lv-top --limit 5
+        python agent.py lv-top --slow 500
+    """
+    _banner()
+    from tools.lv_monitor import get_lv_queries, get_lv_sessions, print_snapshot_report
+
+    try:
+        queries  = get_lv_queries(limit=limit)
+        sessions = get_lv_sessions()
+    except Exception as e:
+        console.print(f"[red]✗ {e}[/red]")
+        raise typer.Exit(1)
+
+    if slow:
+        queries = [q for q in queries if q["avg_ms"] >= slow]
+
+    print_snapshot_report(queries, sessions)
+
+
+@app.command()
+def lv_export(
+    output: str = typer.Option(None, "--output", "-o",
+                               help="Output folder (default: queries/)"),
+    limit:  int = typer.Option(20,   "--limit",  "-n",
+                               help="Max queries to export"),
+    slow:   float = typer.Option(0,  "--slow",   "-s",
+                                 help="Only export queries >=Nms"),
+):
+    """
+    Export LabVIEW queries to .sql files in queries/ folder.
+    Files are ready for: python agent.py full-run --folder queries/
+
+    Examples:
+        python agent.py lv-export
+        python agent.py lv-export --slow 200
+        python agent.py lv-export --output my_queries/
+    """
+    _banner()
+    from tools.lv_monitor import get_lv_queries, export_to_sql_files
+    from pathlib import Path as PPath
+
+    try:
+        queries = get_lv_queries(limit=limit)
+    except Exception as e:
+        console.print(f"[red]✗ {e}[/red]")
+        raise typer.Exit(1)
+
+    if slow:
+        queries = [q for q in queries if q["avg_ms"] >= slow]
+
+    if not queries:
+        console.print("[yellow]No LabVIEW queries found to export[/yellow]")
+        console.print(
+            "[dim]Use the LabVIEW dashboard first, "
+            "then run this command[/dim]"
+        )
+        return
+
+    files = export_to_sql_files(queries, output_dir=output)
+
+    console.print(
+        f"\n[green]✓ Exported {len(files)} query file(s)[/green]"
+    )
+    for f in files:
+        console.print(f"  [dim]{PPath(f).name}[/dim]")
+
+    out_dir = output or "queries/"
+    console.print(
+        f"\n[dim]Optimize all of them with:[/dim]"
+        f"\n  [cyan]python agent.py full-run --folder {out_dir} --safe[/cyan]"
+    )
+
+
+@app.command()
+def lv_status():
+    """
+    Quick check — is LabVIEW connected? What is it doing right now?
+
+    Example:
+        python agent.py lv-status
+    """
+    _banner()
+    from tools.lv_monitor import get_lv_sessions, get_lv_active
+
+    try:
+        sessions = get_lv_sessions()
+        active   = get_lv_active()
+    except Exception as e:
+        console.print(f"[red]✗ {e}[/red]")
+        raise typer.Exit(1)
+
+    if not sessions:
+        console.print(
+            "\n  [yellow]LabVIEW is NOT connected to SQL Server[/yellow]"
+        )
+        console.print(
+            "  [dim]Open your LabVIEW dashboard and connect to the database[/dim]"
+        )
+        return
+
+    console.print(
+        f"\n  [bold green]✓ LabVIEW is connected[/bold green]  "
+        f"({len(sessions)} session(s))"
+    )
+    for s in sessions:
+        console.print(
+            f"  [dim]  Session {s['session_id']} · "
+            f"{s['host_name']} · {s['database_name']} · "
+            f"connected since {s['login_time']}[/dim]"
+        )
+
+    if active:
+        console.print(f"\n  [yellow]Currently executing:[/yellow]")
+        for a in active:
+            console.print(
+                f"  [yellow]  ●[/yellow] {a['query_preview'][:80]}  "
+                f"[dim]({a['elapsed_ms']}ms elapsed)[/dim]"
+            )
+    else:
+        console.print("\n  [dim]  Currently idle (no active queries)[/dim]")
+
+
+@app.command()
+def lv_auto_optimize(
+    top:  int   = typer.Option(5,     "--top",   "-n",
+                               help="Optimize top N slowest queries"),
+    slow: float = typer.Option(200.0, "--slow",  "-s",
+                               help="Only optimize queries >=Nms (default 200)"),
+    safe: bool  = typer.Option(True,  "--safe",        help="Test in sandbox before deploying"),
+):
+    """
+    Find the slowest LabVIEW queries and run full-run on each automatically.
+
+    Examples:
+        python agent.py lv-auto-optimize
+        python agent.py lv-auto-optimize --top 3 --slow 500
+        python agent.py lv-auto-optimize --no-safe
+    """
+    _banner()
+    from tools.lv_monitor import get_lv_queries, export_to_sql_files
+    from tools.pipeline   import run_single
+
+    try:
+        queries = get_lv_queries(limit=top * 2)
+    except Exception as e:
+        console.print(f"[red]✗ {e}[/red]")
+        raise typer.Exit(1)
+
+    # Filter by threshold and take top N
+    slow_queries = [q for q in queries if q["avg_ms"] >= slow][:top]
+
+    if not slow_queries:
+        console.print(
+            f"[green]✓ No LabVIEW queries slower than {slow}ms found[/green]"
+        )
+        return
+
+    console.print(
+        f"[cyan]Found {len(slow_queries)} query/queries ≥{slow}ms "
+        f"— running full optimization pipeline on each[/cyan]\n"
+    )
+
+    results = []
+    for i, q in enumerate(slow_queries, 1):
+        console.print(
+            f"\n[bold]Query {i}/{len(slow_queries)}[/bold] — "
+            f"{q['avg_ms']}ms avg · {q['exec_count']} runs"
+        )
+        console.print(
+            f"[dim]{q['query_preview'][:80]}[/dim]\n"
+        )
+
+        result = run_single(
+            query       = q["full_query"],
+            label       = f"lv_auto_{i}",
+            skip_deploy = safe,   # if safe, sandbox handles deploy
+        )
+
+        if safe and result.get("success"):
+            opt = result.get("optimization", {}) or {}
+            if opt.get("index_scripts"):
+                from tools.sandbox    import run_sandbox_test, print_sandbox_result
+                from tools.history    import get_history
+
+                history = get_history(limit=5)
+                reg_q   = [
+                    {"label": r.get("label") or "query",
+                     "sql":   r["query_preview"],
+                     "baseline_ms": r["after_ms"]}
+                    for r in history if r.get("after_ms")
+                ]
+                sandbox_result = run_sandbox_test(
+                    sql_statements     = opt["index_scripts"],
+                    regression_queries = reg_q[:3],
+                )
+                print_sandbox_result(sandbox_result)
+
+        results.append(result)
+
+    # Final summary
+    console.print()
+    console.print(
+        f"[bold cyan]━━━ Auto-Optimize Complete ━━━[/bold cyan]"
+    )
+    successful = sum(1 for r in results if r.get("success"))
+    console.print(
+        f"  {successful}/{len(results)} queries optimized successfully"
+    )
+    console.print(
+        f"\n[dim]Generate deployment package: "
+        f"python agent.py deploy[/dim]"
+    )
+
+
 # ============================================================
 # PHASE 3.3 COMMANDS — shadow DB sandbox
 # ============================================================
@@ -1164,12 +1498,153 @@ def report(
     console.print(f"\n[dim]Full log: {log_path}[/dim]")
 
 
+
+# ============================================================
+# PHASE 3.7 COMMANDS — multi-client management
+# ============================================================
+
 @app.command()
-def new_client(name: str = typer.Argument(..., help="New client name")):
-    """[Phase 9] Create a new client workspace from template."""
+def clients():
+    """List all client workspaces and show which is active."""
     _banner()
-    console.print(f"[yellow]⏳ Multi-client system — coming in Phase 9[/yellow]")
-    console.print(f"Client name: [dim]{name}[/dim]")
+    from tools.client_manager import list_clients, print_client_list
+    print_client_list(list_clients())
+
+
+@app.command()
+def client_switch(
+    name: str = typer.Argument(..., help="Client name to switch to"),
+):
+    """
+    Switch to a different client workspace.
+    All subsequent commands will use that client's DB, history, migrations etc.
+
+    Example:
+        python agent.py client-switch client_xyz
+    """
+    _banner()
+    from tools.client_manager import (
+        set_active_client, get_client_config,
+        get_client_paths, print_client_detail
+    )
+    from tools.error_handler import ConfigError
+
+    try:
+        set_active_client(name)
+        cfg   = get_client_config(name)
+        paths = get_client_paths(name)
+        console.print(f"[bold green]✓ Switched to:[/bold green] {name}")
+        print_client_detail(cfg, paths)
+    except ConfigError as e:
+        console.print(f"[red]✗ {e.message}[/red]")
+        if e.recovery:
+            console.print(f"[dim]  {e.recovery}[/dim]")
+        raise typer.Exit(1)
+
+
+@app.command()
+def client_info(
+    name: str = typer.Argument(None, help="Client name (default: active client)"),
+):
+    """
+    Show full details for a client — DB config, paths, bak path.
+
+    Example:
+        python agent.py client-info
+        python agent.py client-info client_xyz
+    """
+    _banner()
+    from tools.client_manager import (
+        get_client_config, get_client_paths,
+        get_active_client, print_client_detail
+    )
+
+    name  = name or get_active_client()
+    cfg   = get_client_config(name)
+    paths = get_client_paths(name)
+    print_client_detail(cfg, paths)
+
+
+@app.command()
+def client_edit(
+    name:         str = typer.Argument(None, help="Client to edit (default: active)"),
+    display_name: str = typer.Option(None, "--display-name", "-d"),
+    server:       str = typer.Option(None, "--server",       "-s"),
+    database:     str = typer.Option(None, "--database",     "-b"),
+    bak:          str = typer.Option(None, "--bak"),
+    notes:        str = typer.Option(None, "--notes",        "-n"),
+):
+    """
+    Update a client's settings (DB connection, .bak path etc).
+
+    Examples:
+        python agent.py client-edit --database AcmeDev_v2
+        python agent.py client-edit --bak "C:\\Backups\\AcmeDev.bak"
+        python agent.py client-edit client_xyz --server "192.168.1.10\\SQLEXPRESS"
+    """
+    _banner()
+    from tools.client_manager import update_client_config, get_active_client
+    from tools.error_handler  import ConfigError
+
+    name = name or get_active_client()
+    try:
+        cfg = update_client_config(
+            client       = name,
+            display_name = display_name,
+            server       = server,
+            database     = database,
+            bak_path     = bak,
+            notes        = notes,
+        )
+        console.print(f"[green]✓ Updated client config for:[/green] {name}")
+        if database: console.print(f"  Database: [cyan]{database}[/cyan]")
+        if server:   console.print(f"  Server:   [cyan]{server}[/cyan]")
+        if bak:      console.print(f"  BAK path: [cyan]{bak}[/cyan]")
+    except ConfigError as e:
+        console.print(f"[red]✗ {e.message}[/red]")
+        raise typer.Exit(1)
+
+
+@app.command()
+def new_client(
+    name:         str = typer.Argument(..., help="Client folder name e.g. client_xyz"),
+    display_name: str = typer.Option("",   "--display-name", "-d",
+                                     help="Human-readable name e.g. 'XYZ Manufacturing'"),
+    server:       str = typer.Option("",   "--server",       "-s",
+                                     help="SQL Server instance name"),
+    database:     str = typer.Option("",   "--database",     "-b",
+                                     help="Database name"),
+    bak:          str = typer.Option("",   "--bak",
+                                     help="Path to .bak file"),
+    no_switch:    bool= typer.Option(False,"--no-switch",
+                                     help="Don\'t switch to this client after creating"),
+):
+    """
+    Create a new client workspace — isolated migrations, history, reports, deployments.
+
+    Examples:
+        python agent.py new-client client_xyz
+        python agent.py new-client client_xyz --display-name "XYZ Corp" --database XYZDev
+        python agent.py new-client client_xyz --bak "C:\\Backups\\XYZ.bak"
+    """
+    _banner()
+    from tools.client_manager import create_client
+    from tools.error_handler  import ConfigError
+
+    try:
+        create_client(
+            name         = name,
+            display_name = display_name,
+            server       = server,
+            database     = database,
+            bak_path     = bak,
+            set_active   = not no_switch,
+        )
+    except ConfigError as e:
+        console.print(f"[red]✗ {e.message}[/red]")
+        if e.recovery:
+            console.print(f"[dim]  {e.recovery}[/dim]")
+        raise typer.Exit(1)
 
 
 # ============================================================

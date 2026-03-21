@@ -1,0 +1,20 @@
+{
+  "timestamp": "2026-03-21 19:23:50",
+  "label": "",
+  "sessions": [
+    {
+      "session_id": 77,
+      "login_name": "OMEN\\jakharanchit",
+      "host_name": "OMEN",
+      "program_name": "National Instruments LabVIEW",
+      "status": "sleeping",
+      "elapsed_ms": 30,
+      "logical_reads": 59,
+      "login_time": "2026-03-21 19:23:09",
+      "database_name": "VEXA"
+    }
+  ],
+  "queries": [],
+  "query_count": 0,
+  "lv_connected": true
+}
