@@ -17,7 +17,7 @@ ACTIVE_CLIENT = "client_example"
 # ------------------------------------------------------------
 DB_CONFIG = {
     "server":   "localhost",          # e.g. localhost or DESKTOP-ABC\\SQLEXPRESS
-    "database": "VEXA", # e.g. master , etc
+    "database": "VEXA", # e.g. AcmeProduction
     "driver":   "ODBC Driver 17 for SQL Server",
 
     # --- Authentication: pick ONE option ---
@@ -40,6 +40,20 @@ MODELS = {
     "optimizer": "qwen2.5-coder:14b",   # writes fixes, index scripts, reports
     "reasoner":  "deepseek-r1:14b",     # diagnoses WHY something is slow
 }
+
+# ------------------------------------------------------------
+# SANDBOX SETTINGS
+# Required for: python agent.py sandbox-test / full-run --safe
+# ------------------------------------------------------------
+# Path to your .bak file (must be accessible by SQL Server)
+SANDBOX_BAK_PATH = r""                   # e.g. r"C:\Backups\AcmeDev.bak"
+
+# SQL Server DATA directory (for restored .mdf/.ldf files)
+# Leave empty to auto-detect from the .bak file paths
+SANDBOX_DATA_DIR = r""                   # e.g. r"C:\Program Files\Microsoft SQL Server\MSSQL16.SQLEXPRESS\MSSQL\DATA"
+
+# Seconds to wait for RESTORE to complete (large DBs need more)
+SANDBOX_TIMEOUT  = 300
 
 # ------------------------------------------------------------
 # AGENT BEHAVIOUR
