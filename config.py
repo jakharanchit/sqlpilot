@@ -9,7 +9,7 @@
 # ACTIVE CLIENT
 # Change this to switch between clients
 # ------------------------------------------------------------
-ACTIVE_CLIENT = "client_example1"
+ACTIVE_CLIENT = "client_example"
 
 # ------------------------------------------------------------
 # DATABASE CONNECTION
@@ -17,7 +17,7 @@ ACTIVE_CLIENT = "client_example1"
 # ------------------------------------------------------------
 DB_CONFIG = {
     "server":   "localhost",          # e.g. localhost or DESKTOP-ABC\\SQLEXPRESS
-    "database": "VEXA", # e.g. AcmeProduction
+    "database": "VEXA", # e.g. master , etc
     "driver":   "ODBC Driver 17 for SQL Server",
 
     # --- Authentication: pick ONE option ---
@@ -61,6 +61,7 @@ REPORTS_DIR     = os.path.join(BASE_DIR, "reports")
 DEPLOYMENTS_DIR = os.path.join(BASE_DIR, "deployments")
 PLANS_DIR       = os.path.join(BASE_DIR, "plans")
 HISTORY_DB      = os.path.join(BASE_DIR, "query_history.db")
+SNAPSHOTS_DIR   = os.path.join(BASE_DIR, "snapshots")
 
 # Active client paths
 CLIENT_DIR      = os.path.join(PROJECTS_DIR, ACTIVE_CLIENT)

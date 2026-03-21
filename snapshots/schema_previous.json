@@ -1,0 +1,1067 @@
+{
+  "captured_at": "2026-03-21 10:10:54",
+  "database": "VEXA",
+  "client": "client_example",
+  "tables": {
+    "Businesses": {
+      "columns": {
+        "id": {
+          "type": "int",
+          "size": 10,
+          "nullable": "NO",
+          "pk": true
+        },
+        "name": {
+          "type": "nvarchar",
+          "size": 50,
+          "nullable": "YES",
+          "pk": false
+        }
+      },
+      "indexes": {
+        "PK_Manufacturers": {
+          "type": "CLUSTERED",
+          "unique": true,
+          "keys": "id",
+          "includes": ""
+        }
+      },
+      "row_count": 143
+    },
+    "BusinessRelations": {
+      "columns": {
+        "id": {
+          "type": "int",
+          "size": 10,
+          "nullable": "NO",
+          "pk": true
+        },
+        "businessID": {
+          "type": "int",
+          "size": 10,
+          "nullable": "YES",
+          "pk": false
+        },
+        "relationTypeID": {
+          "type": "int",
+          "size": 10,
+          "nullable": "YES",
+          "pk": false
+        }
+      },
+      "indexes": {
+        "PK_BusinessRelations": {
+          "type": "CLUSTERED",
+          "unique": true,
+          "keys": "id",
+          "includes": ""
+        }
+      },
+      "row_count": 217
+    },
+    "Calibration": {
+      "columns": {
+        "id": {
+          "type": "int",
+          "size": 10,
+          "nullable": "NO",
+          "pk": true
+        },
+        "sensorID": {
+          "type": "int",
+          "size": 10,
+          "nullable": "YES",
+          "pk": false
+        },
+        "calDate": {
+          "type": "datetime",
+          "size": 0,
+          "nullable": "NO",
+          "pk": false
+        },
+        "userID": {
+          "type": "nchar",
+          "size": 10,
+          "nullable": "YES",
+          "pk": false
+        },
+        "calExpiration": {
+          "type": "datetime",
+          "size": 0,
+          "nullable": "YES",
+          "pk": false
+        },
+        "calibration": {
+          "type": "nvarchar",
+          "size": -1,
+          "nullable": "YES",
+          "pk": false
+        },
+        "dateEntered": {
+          "type": "datetime",
+          "size": 0,
+          "nullable": "YES",
+          "pk": false
+        }
+      },
+      "indexes": {
+        "PK_Calibration": {
+          "type": "CLUSTERED",
+          "unique": true,
+          "keys": "id",
+          "includes": ""
+        }
+      },
+      "row_count": 37
+    },
+    "EmailAddresses": {
+      "columns": {
+        "id": {
+          "type": "int",
+          "size": 10,
+          "nullable": "NO",
+          "pk": true
+        },
+        "address": {
+          "type": "nvarchar",
+          "size": 50,
+          "nullable": "NO",
+          "pk": false
+        },
+        "userID": {
+          "type": "int",
+          "size": 10,
+          "nullable": "NO",
+          "pk": false
+        }
+      },
+      "indexes": {
+        "PK_EmailAddresses": {
+          "type": "CLUSTERED",
+          "unique": true,
+          "keys": "id",
+          "includes": ""
+        }
+      },
+      "row_count": 1
+    },
+    "ItemLabels": {
+      "columns": {
+        "id": {
+          "type": "int",
+          "size": 10,
+          "nullable": "NO",
+          "pk": true
+        },
+        "labelTypeID": {
+          "type": "int",
+          "size": 10,
+          "nullable": "YES",
+          "pk": false
+        },
+        "itemID": {
+          "type": "int",
+          "size": 10,
+          "nullable": "YES",
+          "pk": false
+        },
+        "labelID": {
+          "type": "int",
+          "size": 10,
+          "nullable": "YES",
+          "pk": false
+        }
+      },
+      "indexes": {
+        "PK_ProjectLabels": {
+          "type": "CLUSTERED",
+          "unique": true,
+          "keys": "id",
+          "includes": ""
+        }
+      },
+      "row_count": 175
+    },
+    "Labels": {
+      "columns": {
+        "id": {
+          "type": "int",
+          "size": 10,
+          "nullable": "NO",
+          "pk": true
+        },
+        "name": {
+          "type": "nvarchar",
+          "size": 100,
+          "nullable": "YES",
+          "pk": false
+        },
+        "parentID": {
+          "type": "int",
+          "size": 10,
+          "nullable": "YES",
+          "pk": false
+        }
+      },
+      "indexes": {
+        "PK_Labels": {
+          "type": "CLUSTERED",
+          "unique": true,
+          "keys": "id",
+          "includes": ""
+        }
+      },
+      "row_count": 9
+    },
+    "LabelTypes": {
+      "columns": {
+        "id": {
+          "type": "int",
+          "size": 10,
+          "nullable": "NO",
+          "pk": true
+        },
+        "name": {
+          "type": "nvarchar",
+          "size": 100,
+          "nullable": "YES",
+          "pk": false
+        }
+      },
+      "indexes": {
+        "PK_LabelType": {
+          "type": "CLUSTERED",
+          "unique": true,
+          "keys": "id",
+          "includes": ""
+        }
+      },
+      "row_count": 2
+    },
+    "MobileNetworks": {
+      "columns": {
+        "id": {
+          "type": "int",
+          "size": 10,
+          "nullable": "NO",
+          "pk": true
+        },
+        "name": {
+          "type": "nvarchar",
+          "size": 50,
+          "nullable": "NO",
+          "pk": false
+        },
+        "address": {
+          "type": "nvarchar",
+          "size": 50,
+          "nullable": "NO",
+          "pk": false
+        }
+      },
+      "indexes": {
+        "PK_MobileNetworks": {
+          "type": "CLUSTERED",
+          "unique": true,
+          "keys": "id",
+          "includes": ""
+        }
+      },
+      "row_count": 7
+    },
+    "Parameters": {
+      "columns": {
+        "id": {
+          "type": "int",
+          "size": 10,
+          "nullable": "NO",
+          "pk": true
+        },
+        "name": {
+          "type": "nvarchar",
+          "size": 50,
+          "nullable": "YES",
+          "pk": false
+        }
+      },
+      "indexes": {
+        "PK_Parameters": {
+          "type": "CLUSTERED",
+          "unique": true,
+          "keys": "id",
+          "includes": ""
+        }
+      },
+      "row_count": 5
+    },
+    "Parts": {
+      "columns": {
+        "id": {
+          "type": "int",
+          "size": 10,
+          "nullable": "NO",
+          "pk": true
+        },
+        "name": {
+          "type": "nvarchar",
+          "size": 50,
+          "nullable": "YES",
+          "pk": false
+        },
+        "manufacturerID": {
+          "type": "int",
+          "size": 10,
+          "nullable": "YES",
+          "pk": false
+        },
+        "partTypeID": {
+          "type": "int",
+          "size": 10,
+          "nullable": "YES",
+          "pk": false
+        },
+        "dateCreated": {
+          "type": "datetime",
+          "size": 0,
+          "nullable": "YES",
+          "pk": false
+        }
+      },
+      "indexes": {
+        "PK_Products": {
+          "type": "CLUSTERED",
+          "unique": true,
+          "keys": "id",
+          "includes": ""
+        }
+      },
+      "row_count": 872
+    },
+    "PartTypes": {
+      "columns": {
+        "id": {
+          "type": "int",
+          "size": 10,
+          "nullable": "NO",
+          "pk": true
+        },
+        "name": {
+          "type": "nvarchar",
+          "size": 50,
+          "nullable": "YES",
+          "pk": false
+        }
+      },
+      "indexes": {
+        "PK_PartTypes": {
+          "type": "CLUSTERED",
+          "unique": true,
+          "keys": "id",
+          "includes": ""
+        }
+      },
+      "row_count": 119
+    },
+    "PhoneNumbers": {
+      "columns": {
+        "id": {
+          "type": "int",
+          "size": 10,
+          "nullable": "NO",
+          "pk": true
+        },
+        "number": {
+          "type": "nchar",
+          "size": 10,
+          "nullable": "NO",
+          "pk": false
+        },
+        "userID": {
+          "type": "int",
+          "size": 10,
+          "nullable": "NO",
+          "pk": false
+        },
+        "networkID": {
+          "type": "int",
+          "size": 10,
+          "nullable": "NO",
+          "pk": false
+        }
+      },
+      "indexes": {
+        "PK_PhoneNumbers": {
+          "type": "CLUSTERED",
+          "unique": true,
+          "keys": "id",
+          "includes": ""
+        }
+      },
+      "row_count": 1
+    },
+    "RelationTypes": {
+      "columns": {
+        "id": {
+          "type": "int",
+          "size": 10,
+          "nullable": "NO",
+          "pk": true
+        },
+        "name": {
+          "type": "nvarchar",
+          "size": 50,
+          "nullable": "YES",
+          "pk": false
+        }
+      },
+      "indexes": {
+        "PK_RelationTypes": {
+          "type": "CLUSTERED",
+          "unique": true,
+          "keys": "id",
+          "includes": ""
+        }
+      },
+      "row_count": 2
+    },
+    "Sensors": {
+      "columns": {
+        "id": {
+          "type": "int",
+          "size": 10,
+          "nullable": "NO",
+          "pk": true
+        },
+        "serialNumber": {
+          "type": "nvarchar",
+          "size": 50,
+          "nullable": "YES",
+          "pk": false
+        },
+        "sensor": {
+          "type": "nvarchar",
+          "size": -1,
+          "nullable": "YES",
+          "pk": false
+        }
+      },
+      "indexes": {
+        "PK_Sensors": {
+          "type": "CLUSTERED",
+          "unique": true,
+          "keys": "id",
+          "includes": ""
+        }
+      },
+      "row_count": 25
+    },
+    "SensorsMap": {
+      "columns": {
+        "id": {
+          "type": "int",
+          "size": 10,
+          "nullable": "NO",
+          "pk": true
+        },
+        "machineID": {
+          "type": "int",
+          "size": 10,
+          "nullable": "YES",
+          "pk": false
+        },
+        "tag": {
+          "type": "nvarchar",
+          "size": 50,
+          "nullable": "YES",
+          "pk": false
+        },
+        "sensorID": {
+          "type": "int",
+          "size": 10,
+          "nullable": "YES",
+          "pk": false
+        },
+        "mapDate": {
+          "type": "datetime",
+          "size": 0,
+          "nullable": "YES",
+          "pk": false
+        },
+        "userID": {
+          "type": "int",
+          "size": 10,
+          "nullable": "YES",
+          "pk": false
+        }
+      },
+      "indexes": {
+        "PK_SensorsMap": {
+          "type": "CLUSTERED",
+          "unique": true,
+          "keys": "id",
+          "includes": ""
+        }
+      },
+      "row_count": 130
+    },
+    "sysdiagrams": {
+      "columns": {
+        "name": {
+          "type": "nvarchar",
+          "size": 128,
+          "nullable": "NO",
+          "pk": false
+        },
+        "principal_id": {
+          "type": "int",
+          "size": 10,
+          "nullable": "NO",
+          "pk": false
+        },
+        "diagram_id": {
+          "type": "int",
+          "size": 10,
+          "nullable": "NO",
+          "pk": true
+        },
+        "version": {
+          "type": "int",
+          "size": 10,
+          "nullable": "YES",
+          "pk": false
+        },
+        "definition": {
+          "type": "varbinary",
+          "size": -1,
+          "nullable": "YES",
+          "pk": false
+        }
+      },
+      "indexes": {
+        "PK__sysdiagr__C2B05B612C5FF7E7": {
+          "type": "CLUSTERED",
+          "unique": true,
+          "keys": "diagram_id",
+          "includes": ""
+        },
+        "UK_principal_name": {
+          "type": "NONCLUSTERED",
+          "unique": true,
+          "keys": "principal_id, name",
+          "includes": ""
+        }
+      },
+      "row_count": 1
+    },
+    "TestMachines": {
+      "columns": {
+        "id": {
+          "type": "int",
+          "size": 10,
+          "nullable": "NO",
+          "pk": true
+        },
+        "name": {
+          "type": "nvarchar",
+          "size": 50,
+          "nullable": "YES",
+          "pk": false
+        },
+        "serialNumber": {
+          "type": "nvarchar",
+          "size": 50,
+          "nullable": "YES",
+          "pk": false
+        },
+        "testMachineTypeID": {
+          "type": "int",
+          "size": 10,
+          "nullable": "YES",
+          "pk": false
+        }
+      },
+      "indexes": {
+        "PK_TestMachines": {
+          "type": "CLUSTERED",
+          "unique": true,
+          "keys": "id",
+          "includes": ""
+        }
+      },
+      "row_count": 30
+    },
+    "TestMachineTypes": {
+      "columns": {
+        "id": {
+          "type": "int",
+          "size": 10,
+          "nullable": "NO",
+          "pk": true
+        },
+        "name": {
+          "type": "nvarchar",
+          "size": 50,
+          "nullable": "YES",
+          "pk": false
+        }
+      },
+      "indexes": {
+        "PK_TestMachineTypes": {
+          "type": "CLUSTERED",
+          "unique": true,
+          "keys": "id",
+          "includes": ""
+        }
+      },
+      "row_count": 5
+    },
+    "TestRequests": {
+      "columns": {
+        "id": {
+          "type": "int",
+          "size": 10,
+          "nullable": "NO",
+          "pk": true
+        },
+        "dateCreated": {
+          "type": "datetime",
+          "size": 0,
+          "nullable": "YES",
+          "pk": false
+        },
+        "testRequestNumber": {
+          "type": "nvarchar",
+          "size": 50,
+          "nullable": "YES",
+          "pk": false
+        },
+        "clientID": {
+          "type": "int",
+          "size": 10,
+          "nullable": "YES",
+          "pk": false
+        },
+        "testSpecID": {
+          "type": "int",
+          "size": 10,
+          "nullable": "YES",
+          "pk": false
+        },
+        "partID": {
+          "type": "int",
+          "size": 10,
+          "nullable": "YES",
+          "pk": false
+        },
+        "userIdCreated": {
+          "type": "int",
+          "size": 10,
+          "nullable": "YES",
+          "pk": false
+        },
+        "userIdModified": {
+          "type": "int",
+          "size": 10,
+          "nullable": "YES",
+          "pk": false
+        },
+        "dateModified": {
+          "type": "datetime",
+          "size": 0,
+          "nullable": "YES",
+          "pk": false
+        },
+        "parts": {
+          "type": "nvarchar",
+          "size": -1,
+          "nullable": "YES",
+          "pk": false
+        },
+        "archived": {
+          "type": "bit",
+          "size": 0,
+          "nullable": "YES",
+          "pk": false
+        }
+      },
+      "indexes": {
+        "PK_TestRequests": {
+          "type": "CLUSTERED",
+          "unique": true,
+          "keys": "id",
+          "includes": ""
+        }
+      },
+      "row_count": 1666
+    },
+    "Tests": {
+      "columns": {
+        "id": {
+          "type": "int",
+          "size": 10,
+          "nullable": "NO",
+          "pk": true
+        },
+        "date": {
+          "type": "datetime",
+          "size": 0,
+          "nullable": "YES",
+          "pk": false
+        },
+        "userID": {
+          "type": "int",
+          "size": 10,
+          "nullable": "YES",
+          "pk": false
+        },
+        "dataPath": {
+          "type": "nvarchar",
+          "size": 255,
+          "nullable": "YES",
+          "pk": false
+        },
+        "partSerialNumber": {
+          "type": "nvarchar",
+          "size": 50,
+          "nullable": "YES",
+          "pk": false
+        },
+        "testRequestID": {
+          "type": "int",
+          "size": 10,
+          "nullable": "YES",
+          "pk": false
+        },
+        "testMachineID": {
+          "type": "int",
+          "size": 10,
+          "nullable": "YES",
+          "pk": false
+        },
+        "completed": {
+          "type": "bit",
+          "size": 0,
+          "nullable": "YES",
+          "pk": false
+        },
+        "vexaID": {
+          "type": "nvarchar",
+          "size": 50,
+          "nullable": "YES",
+          "pk": false
+        },
+        "archived": {
+          "type": "bit",
+          "size": 0,
+          "nullable": "YES",
+          "pk": false
+        }
+      },
+      "indexes": {
+        "PK_Tests": {
+          "type": "CLUSTERED",
+          "unique": true,
+          "keys": "id",
+          "includes": ""
+        }
+      },
+      "row_count": 42372
+    },
+    "TestSpecs": {
+      "columns": {
+        "id": {
+          "type": "int",
+          "size": 10,
+          "nullable": "NO",
+          "pk": true
+        },
+        "dateCreated": {
+          "type": "datetime",
+          "size": 0,
+          "nullable": "YES",
+          "pk": false
+        },
+        "userIdCreated": {
+          "type": "int",
+          "size": 10,
+          "nullable": "YES",
+          "pk": false
+        },
+        "name": {
+          "type": "nvarchar",
+          "size": 50,
+          "nullable": "YES",
+          "pk": false
+        },
+        "testSpecTypeId": {
+          "type": "int",
+          "size": 10,
+          "nullable": "YES",
+          "pk": false
+        },
+        "testSpec": {
+          "type": "nvarchar",
+          "size": -1,
+          "nullable": "YES",
+          "pk": false
+        },
+        "dateModified": {
+          "type": "datetime",
+          "size": 0,
+          "nullable": "YES",
+          "pk": false
+        },
+        "userIdModified": {
+          "type": "int",
+          "size": 10,
+          "nullable": "YES",
+          "pk": false
+        },
+        "archived": {
+          "type": "bit",
+          "size": 0,
+          "nullable": "YES",
+          "pk": false
+        }
+      },
+      "indexes": {
+        "PK_TestSpecs": {
+          "type": "CLUSTERED",
+          "unique": true,
+          "keys": "id",
+          "includes": ""
+        }
+      },
+      "row_count": 455
+    },
+    "TestSpecTypes": {
+      "columns": {
+        "id": {
+          "type": "int",
+          "size": 10,
+          "nullable": "NO",
+          "pk": true
+        },
+        "name": {
+          "type": "nvarchar",
+          "size": 50,
+          "nullable": "YES",
+          "pk": false
+        }
+      },
+      "indexes": {
+        "PK_TestSpecType": {
+          "type": "CLUSTERED",
+          "unique": true,
+          "keys": "id",
+          "includes": ""
+        }
+      },
+      "row_count": 5
+    },
+    "Users": {
+      "columns": {
+        "id": {
+          "type": "int",
+          "size": 10,
+          "nullable": "NO",
+          "pk": true
+        },
+        "dateCreated": {
+          "type": "datetime",
+          "size": 0,
+          "nullable": "YES",
+          "pk": false
+        },
+        "firstName": {
+          "type": "nvarchar",
+          "size": 50,
+          "nullable": "YES",
+          "pk": false
+        },
+        "lastName": {
+          "type": "nvarchar",
+          "size": 50,
+          "nullable": "YES",
+          "pk": false
+        },
+        "username": {
+          "type": "nvarchar",
+          "size": 50,
+          "nullable": "YES",
+          "pk": false
+        },
+        "password": {
+          "type": "nvarchar",
+          "size": 50,
+          "nullable": "YES",
+          "pk": false
+        },
+        "accessLevel": {
+          "type": "int",
+          "size": 10,
+          "nullable": "YES",
+          "pk": false
+        },
+        "archived": {
+          "type": "bit",
+          "size": 0,
+          "nullable": "YES",
+          "pk": false
+        }
+      },
+      "indexes": {
+        "PK_Users": {
+          "type": "CLUSTERED",
+          "unique": true,
+          "keys": "id",
+          "includes": ""
+        }
+      },
+      "row_count": 19
+    },
+    "WeightTests": {
+      "columns": {
+        "id": {
+          "type": "int",
+          "size": 10,
+          "nullable": "NO",
+          "pk": true
+        },
+        "testID": {
+          "type": "int",
+          "size": 10,
+          "nullable": "YES",
+          "pk": false
+        },
+        "weight": {
+          "type": "float",
+          "size": 53,
+          "nullable": "YES",
+          "pk": false
+        },
+        "temperature": {
+          "type": "float",
+          "size": 53,
+          "nullable": "YES",
+          "pk": false
+        },
+        "humidity": {
+          "type": "float",
+          "size": 53,
+          "nullable": "YES",
+          "pk": false
+        },
+        "pressure": {
+          "type": "float",
+          "size": 53,
+          "nullable": "YES",
+          "pk": false
+        },
+        "notes": {
+          "type": "nvarchar",
+          "size": -1,
+          "nullable": "YES",
+          "pk": false
+        },
+        "precision": {
+          "type": "int",
+          "size": 10,
+          "nullable": "YES",
+          "pk": false
+        }
+      },
+      "indexes": {
+        "PK_WeightTests": {
+          "type": "CLUSTERED",
+          "unique": true,
+          "keys": "id",
+          "includes": ""
+        }
+      },
+      "row_count": 44834
+    }
+  },
+  "views": {
+    "View_Businesses": {
+      "definition_hash": "56228e1546d732c61f87e78f7c9a3554",
+      "definition": "CREATE VIEW [dbo].[View_Businesses]\r\nAS\r\nSELECT        dbo.BusinessRelations.businessID, dbo.Businesses.name AS businessName, dbo.BusinessRelations.relationTypeID, dbo.RelationTypes.name AS relationshipName\r\nFROM            dbo.RelationTypes INNER JOIN\r\n                         dbo.BusinessRelations ON dbo.RelationTypes.id = dbo.BusinessRelations.relationTypeID RIGHT OUTER JOIN\r\n                         dbo.Businesses ON dbo.BusinessRelations.businessID = dbo.Businesses.id\r\n"
+    },
+    "View_Calibration": {
+      "definition_hash": "9258d3c0a495c55b207cd00f172d12e3",
+      "definition": "CREATE VIEW dbo.View_Calibration\r\nAS\r\nSELECT        t.id AS calID, t.sensorID, t.calibration, t.userID, t.calDate, t.calExpiration, t.dateEntered\r\nFROM            (SELECT        sensorID, MAX(dateEntered) AS maxDate\r\n                          FROM            dbo.Calibration\r\n                          GROUP BY sensorID) AS r INNER JOIN\r\n                         dbo.Calibration AS t ON t.sensorID = r.sensorID AND t.dateEntered = r.maxDate\r\n"
+    },
+    "View_EmailAddresses": {
+      "definition_hash": "bc4b12149817260a07c1ca69081bf663",
+      "definition": "CREATE VIEW [dbo].[View_EmailAddresses]\r\nAS\r\nSELECT        dbo.EmailAddresses.id AS emailID, dbo.EmailAddresses.address AS emailAddress, dbo.EmailAddresses.userID, dbo.Users.firstName AS userFirstName, dbo.Users.lastName AS userLastName, \r\n                         dbo.Users.archived AS userArchived\r\nFROM            dbo.EmailAddresses INNER JOIN\r\n                         dbo.Users ON dbo.EmailAddresses.userID = dbo.Users.id\r\n"
+    },
+    "View_LabeledTestRequests": {
+      "definition_hash": "27cce698ed76bd7bac1874eb416f7bc9",
+      "definition": "CREATE VIEW [dbo].[View_LabeledTestRequests]\r\nAS\r\nSELECT        dbo.View_TestRequests.testRequestID, dbo.View_TestRequests.testRequestDateCreated, dbo.View_TestRequests.testRequestNumber, dbo.View_TestRequests.testSpecID, dbo.View_TestRequests.testSpecDateCreated, \r\n                         dbo.View_TestRequests.testSpecName, dbo.View_TestRequests.testSpecTypeId, dbo.View_TestRequests.testSpecType, dbo.View_TestRequests.partID, dbo.View_TestRequests.partName, dbo.View_TestRequests.partTypeID, \r\n                         dbo.View_TestRequests.partTypeName, dbo.View_TestRequests.manufacturerID, dbo.View_TestRequests.manufacturerName, dbo.View_TestRequests.clientID, dbo.View_TestRequests.clientName, \r\n                         dbo.View_TestRequests.userIdCreated, dbo.View_TestRequests.userFullName, dbo.View_TestRequests.parts, dbo.View_TestRequests.archived, dbo.View_TestRequestLabelsCSV.labels, \r\n                         dbo.View_TestRequestLabelIDsCSV.labelIDs\r\nFROM            dbo.View_TestRequests LEFT OUTER JOIN\r\n                         dbo.View_TestRequestLabelIDsCSV ON dbo.View_TestRequests.testRequestID = dbo.View_TestRequestLabelIDsCSV.testRequestID LEFT OUTER JOIN\r\n                         dbo.View_TestRequestLabelsCSV ON dbo.View_TestRequests.testRequestID = dbo.View_TestRequestLabelsCSV.testRequestID\r\n"
+    },
+    "View_LabeledTestRequestsAndLabelIDs": {
+      "definition_hash": "b8d1d1f33d9838e25784fb7972e1b174",
+      "definition": "CREATE VIEW [dbo].[View_LabeledTestRequestsAndLabelIDs]\r\nAS\r\nSELECT        dbo.View_LabeledTestRequests.*, dbo.ItemLabels.labelTypeID, dbo.ItemLabels.labelID\r\nFROM            dbo.View_LabeledTestRequests LEFT OUTER JOIN\r\n                         dbo.ItemLabels ON dbo.View_LabeledTestRequests.testRequestID = dbo.ItemLabels.itemID\r\n"
+    },
+    "View_MachineSensors": {
+      "definition_hash": "90534f97abc686e144f2d95679be707a",
+      "definition": "CREATE VIEW [dbo].[View_MachineSensors]\r\nAS\r\nSELECT        M.machineID, M.tag, S.sensorID, S.sensor, S.calibration, S.calID\r\nFROM            dbo.View_Sensors AS S INNER JOIN\r\n                         dbo.View_SensorsMap AS M ON S.sensorID = M.sensorID\r\n"
+    },
+    "View_Parts": {
+      "definition_hash": "e74a0f6ce4f2fb65edb09f91fb998164",
+      "definition": "CREATE VIEW [dbo].[View_Parts]\r\nAS\r\nSELECT        dbo.Parts.id AS partID, dbo.Parts.name AS partName, dbo.Parts.partTypeID, dbo.PartTypes.name AS partTypeName, dbo.Parts.manufacturerID, dbo.Businesses.name AS manufacturerName, dbo.Parts.dateCreated\r\nFROM            dbo.Businesses RIGHT OUTER JOIN\r\n                         dbo.Parts ON dbo.Businesses.id = dbo.Parts.manufacturerID LEFT OUTER JOIN\r\n                         dbo.PartTypes ON dbo.Parts.partTypeID = dbo.PartTypes.id\r\n"
+    },
+    "View_PhoneNumbers": {
+      "definition_hash": "248a8a5efd18a9ad4bf4004e6c461a00",
+      "definition": "CREATE VIEW [dbo].[View_PhoneNumbers]\r\nAS\r\nSELECT        dbo.MobileNetworks.name AS networkName, dbo.MobileNetworks.address AS networkAddress, dbo.PhoneNumbers.id AS phoneID, dbo.PhoneNumbers.number AS phoneNumber, dbo.Users.id AS userID, \r\n                         dbo.Users.firstName AS userFirstName, dbo.Users.lastName AS userLastName, dbo.Users.archived AS userArchived, dbo.MobileNetworks.id AS networkID\r\nFROM            dbo.MobileNetworks INNER JOIN\r\n                         dbo.PhoneNumbers ON dbo.MobileNetworks.id = dbo.PhoneNumbers.networkID INNER JOIN\r\n                         dbo.Users ON dbo.PhoneNumbers.userID = dbo.Users.id\r\n"
+    },
+    "View_Sensors": {
+      "definition_hash": "4fdfbff6646b516fcef8bf3ead81dcd4",
+      "definition": "CREATE VIEW dbo.View_Sensors\r\nAS\r\nSELECT        S.id AS sensorID, S.serialNumber, S.sensor, C.calID, C.calibration, C.userID AS calUserID, C.calDate, C.calExpiration\r\nFROM            dbo.View_Calibration AS C INNER JOIN\r\n                         dbo.Sensors AS S ON C.sensorID = S.id\r\n"
+    },
+    "View_SensorsMap": {
+      "definition_hash": "5083ef3e6db3a2a719a34a05279222bb",
+      "definition": "CREATE VIEW [dbo].[View_SensorsMap]\r\nAS\r\nSELECT        S.mapID, S.sensorID, S.machineID, S.tag, S.mapDate, dbo.TestMachines.name AS machineName, dbo.TestMachines.serialNumber AS machineSN, dbo.TestMachineTypes.name AS machineType\r\nFROM            dbo.TestMachineTypes INNER JOIN\r\n                         dbo.TestMachines ON dbo.TestMachineTypes.id = dbo.TestMachines.testMachineTypeID RIGHT OUTER JOIN\r\n                             (SELECT        machineID, tag, MAX(mapDate) AS latestMapDate\r\n                               FROM            dbo.SensorsMap\r\n                               GROUP BY machineID, tag) AS M INNER JOIN\r\n                             (SELECT        t.id AS mapID, t.sensorID, t.machineID, t.tag, t.mapDate\r\n                               FROM            (SELECT        sensorID, MAX(mapDate) AS maxDate\r\n                                                         FROM            dbo.SensorsMap AS SensorsMap_1\r\n                                                         GROUP BY sensorID) AS r INNER JOIN\r\n                                                         dbo.SensorsMap AS t ON t.sensorID = r.sensorID AND t.mapDate = r.maxDate) AS S ON M.latestMapDate = S.mapDate AND M.tag = S.tag AND M.machineID = S.machineID ON dbo.TestMachines.id = S.machineID\r\n"
+    },
+    "View_TestMachines": {
+      "definition_hash": "382b631aa146a68b1391186c2b311fee",
+      "definition": "CREATE VIEW [dbo].[View_TestMachines]\r\nAS\r\nSELECT        dbo.TestMachines.id AS testMachineID, dbo.TestMachines.name AS testMachineName, dbo.TestMachines.serialNumber AS testMachineSN, dbo.TestMachines.testMachineTypeID, \r\n                         dbo.TestMachineTypes.name AS testMachineType\r\nFROM            dbo.TestMachines LEFT OUTER JOIN\r\n                         dbo.TestMachineTypes ON dbo.TestMachines.testMachineTypeID = dbo.TestMachineTypes.id\r\n"
+    },
+    "View_TestRequestLabelIDsCSV": {
+      "definition_hash": "79f1e6a8b40e6ac954e9984e36e19fe0",
+      "definition": "\r\nCREATE VIEW [dbo].[View_TestRequestLabelIDsCSV]\r\nAS\r\nWITH Partitioned AS\r\n(\r\n    SELECT \r\n        itemID,\r\n        labelID,\r\n        ROW_NUMBER() OVER (PARTITION BY itemID ORDER BY labelID) AS NameNumber,\r\n        COUNT(*) OVER (PARTITION BY itemID) AS NameCount\r\n    FROM View_TestRequestlabels\r\n),\r\nConcatenated AS\r\n(\r\n    SELECT \r\n        itemID, \r\n        CAST(labelID AS nvarchar) AS labelIDs, \r\n        labelID, \r\n        NameNumber, \r\n        NameCount \r\n    FROM Partitioned \r\n    WHERE NameNumber = 1\r\n\r\n    UNION ALL\r\n\r\n    SELECT \r\n        P.itemID, \r\n        CAST(C.labelIDs + ',' + CAST(P.labelID AS nvarchar) AS nvarchar), \r\n        P.labelID, \r\n        P.NameNumber, \r\n        P.NameCount\r\n    FROM Partitioned AS P\r\n        INNER JOIN Concatenated AS C \r\n                ON P.itemID = C.itemID \r\n                AND P.NameNumber = C.NameNumber + 1\r\n)\r\nSELECT \r\n    itemID AS testRequestID,\r\n    labelIDs\r\nFROM Concatenated\r\nWHERE NameNumber = NameCount\r\n"
+    },
+    "View_TestRequestLabels": {
+      "definition_hash": "ec579bcfda313ba48662983339e2b4d8",
+      "definition": "CREATE VIEW [dbo].[View_TestRequestLabels]\r\nAS\r\nSELECT        dbo.ItemLabels.itemID, dbo.TestRequests.testRequestNumber, dbo.Labels.name AS labelName, dbo.ItemLabels.labelID\r\nFROM            dbo.ItemLabels INNER JOIN\r\n                         dbo.Labels ON dbo.ItemLabels.labelID = dbo.Labels.id LEFT OUTER JOIN\r\n                         dbo.TestRequests ON dbo.ItemLabels.id = dbo.TestRequests.id\r\nWHERE        (dbo.ItemLabels.labelTypeID = 1)\r\n"
+    },
+    "View_TestRequestLabelsCSV": {
+      "definition_hash": "61c9e90a1ccf1399bf1b0eab17ba4276",
+      "definition": "\r\nCREATE VIEW [dbo].[View_TestRequestLabelsCSV]\r\nAS\r\nWITH Partitioned AS\r\n(\r\n    SELECT \r\n        itemID,\r\n        labelName,\r\n        ROW_NUMBER() OVER (PARTITION BY itemID ORDER BY labelName) AS NameNumber,\r\n        COUNT(*) OVER (PARTITION BY itemID) AS NameCount\r\n    FROM View_TestRequestlabels\r\n),\r\nConcatenated AS\r\n(\r\n    SELECT \r\n        itemID, \r\n        CAST(labelName AS nvarchar) AS labels, \r\n        labelName, \r\n        NameNumber, \r\n        NameCount \r\n    FROM Partitioned \r\n    WHERE NameNumber = 1\r\n\r\n    UNION ALL\r\n\r\n    SELECT \r\n        P.itemID, \r\n        CAST(C.labels + ', ' + P.labelName AS nvarchar), \r\n        P.labelName, \r\n        P.NameNumber, \r\n        P.NameCount\r\n    FROM Partitioned AS P\r\n        INNER JOIN Concatenated AS C \r\n                ON P.itemID = C.itemID \r\n                AND P.NameNumber = C.NameNumber + 1\r\n)\r\nSELECT \r\n    itemID AS testRequestID,\r\n    labels\r\nFROM Concatenated\r\nWHERE NameNumber = NameCount\r\n"
+    },
+    "View_TestRequests": {
+      "definition_hash": "6d3fa4b7869c8bf5183c4397ac3fecc2",
+      "definition": "CREATE VIEW dbo.View_TestRequests\r\nAS\r\nSELECT        dbo.TestRequests.id AS testRequestID, dbo.TestRequests.dateCreated AS testRequestDateCreated, dbo.TestRequests.testRequestNumber, dbo.View_TestSpecs.testSpecID, dbo.View_TestSpecs.testSpecDateCreated, \r\n                         dbo.View_TestSpecs.testSpecName, dbo.View_TestSpecs.testSpecTypeId, dbo.View_TestSpecs.testSpecType, dbo.TestRequests.partID, dbo.View_Parts.partName, dbo.View_Parts.partTypeID, dbo.View_Parts.partTypeName, \r\n                         dbo.View_Parts.manufacturerID, dbo.View_Parts.manufacturerName, dbo.TestRequests.clientID, dbo.Businesses.name AS clientName, dbo.TestRequests.userIdCreated, dbo.View_Users.fullName AS userFullName, \r\n                         dbo.TestRequests.parts, dbo.TestRequests.archived\r\nFROM            dbo.TestRequests LEFT OUTER JOIN\r\n                         dbo.View_Parts ON dbo.TestRequests.partID = dbo.View_Parts.partID LEFT OUTER JOIN\r\n                         dbo.View_Users ON dbo.TestRequests.userIdCreated = dbo.View_Users.userID LEFT OUTER JOIN\r\n                         dbo.Businesses ON dbo.TestRequests.clientID = dbo.Businesses.id LEFT OUTER JOIN\r\n                         dbo.View_TestSpecs ON dbo.TestRequests.testSpecID = dbo.View_TestSpecs.testSpecID\r\n"
+    },
+    "View_Tests": {
+      "definition_hash": "3eeb1feb80ec90fa3e080d3f747e4aa2",
+      "definition": "CREATE VIEW dbo.View_Tests\r\nAS\r\nSELECT        dbo.Tests.id AS testID, dbo.Tests.date AS testDate, dbo.Tests.dataPath, dbo.Tests.partSerialNumber, dbo.Tests.completed, dbo.Tests.testRequestID, dbo.View_TestRequests.testRequestNumber, \r\n                         dbo.View_TestRequests.testSpecID, dbo.View_TestRequests.testSpecName, dbo.View_TestRequests.testSpecTypeId, dbo.View_TestRequests.testSpecType, dbo.Tests.testMachineID, \r\n                         dbo.View_TestMachines.testMachineName, dbo.View_TestMachines.testMachineSN, dbo.View_TestMachines.testMachineTypeID, dbo.View_TestMachines.testMachineType, dbo.View_TestRequests.partID, \r\n                         dbo.View_TestRequests.partName, dbo.View_TestRequests.partTypeID, dbo.View_TestRequests.partTypeName, dbo.View_TestRequests.manufacturerID, dbo.View_TestRequests.manufacturerName, \r\n                         dbo.View_TestRequests.clientID, dbo.View_TestRequests.clientName, dbo.Tests.userID, dbo.View_Users.fullName AS userFullName, dbo.Tests.vexaID, dbo.Tests.archived\r\nFROM            dbo.Tests LEFT OUTER JOIN\r\n                         dbo.View_Users ON dbo.Tests.userID = dbo.View_Users.userID LEFT OUTER JOIN\r\n                         dbo.View_TestRequests ON dbo.Tests.testRequestID = dbo.View_TestRequests.testRequestID LEFT OUTER JOIN\r\n                         dbo.View_TestMachines ON dbo.Tests.testMachineID = dbo.View_TestMachines.testMachineID\r\n"
+    },
+    "View_TestSpecs": {
+      "definition_hash": "4f03c5975db5c9569a8286b8c3a23c3d",
+      "definition": "CREATE VIEW dbo.View_TestSpecs\r\nAS\r\nSELECT        dbo.TestSpecs.id AS testSpecID, dbo.TestSpecs.dateCreated AS testSpecDateCreated, dbo.TestSpecs.name AS testSpecName, dbo.TestSpecs.testSpecTypeId, dbo.TestSpecTypes.name AS testSpecType, \r\n                         dbo.TestSpecs.userIdCreated, dbo.View_Users.fullName AS userFullName, dbo.TestSpecs.archived\r\nFROM            dbo.TestSpecTypes RIGHT OUTER JOIN\r\n                         dbo.TestSpecs ON dbo.TestSpecTypes.id = dbo.TestSpecs.testSpecTypeId LEFT OUTER JOIN\r\n                         dbo.View_Users ON dbo.TestSpecs.userIdCreated = dbo.View_Users.userID\r\n"
+    },
+    "View_TestSpecsAdmin": {
+      "definition_hash": "f08c8f4dfbf1436be812c0665ff76dfc",
+      "definition": "\r\nCREATE VIEW [dbo].[View_TestSpecsAdmin]\r\nAS\r\nSELECT        dbo.View_TestSpecs.testSpecID, dbo.View_TestSpecs.testSpecTypeId, dbo.View_TestSpecs.testSpecName, dbo.View_TestSpecs.testSpecDateCreated AS dateCreated, dbo.View_TestSpecs.userIdCreated AS createdByUserID, \r\n                         dbo.View_TestSpecs.userFullName AS createdByName, dbo.TestSpecs.dateModified, dbo.TestSpecs.userIdModified AS modifiedByUserID, dbo.View_Users.fullName AS modifiedByName, dbo.View_TestSpecs.archived\r\nFROM            dbo.TestSpecs INNER JOIN\r\n                         dbo.View_TestSpecs ON dbo.TestSpecs.id = dbo.View_TestSpecs.testSpecID LEFT OUTER JOIN\r\n                         dbo.View_Users ON dbo.TestSpecs.userIdModified = dbo.View_Users.userID\r\n"
+    },
+    "View_Users": {
+      "definition_hash": "0429ce7cf89d145f816dc7f2102e3455",
+      "definition": "CREATE VIEW dbo.View_Users\r\nAS\r\nSELECT        id AS userID, dateCreated, firstName, lastName, username, firstName + N' ' + lastName AS fullName, accessLevel, archived\r\nFROM            dbo.Users\r\n"
+    },
+    "View_WeightTests": {
+      "definition_hash": "16b0acc4a185684171cfab5e651bbf8c",
+      "definition": "CREATE VIEW dbo.View_WeightTests\r\nAS\r\nSELECT        dbo.View_Tests.testID, dbo.View_Tests.testDate, dbo.View_Tests.dataPath, dbo.View_Tests.partSerialNumber, dbo.View_Tests.completed, dbo.View_Tests.testRequestID, dbo.View_Tests.testRequestNumber, \r\n                         dbo.View_Tests.testSpecID, dbo.View_Tests.testSpecName, dbo.View_Tests.testSpecTypeId, dbo.View_Tests.testSpecType, dbo.View_Tests.testMachineID, dbo.View_Tests.testMachineName, dbo.View_Tests.testMachineSN, \r\n                         dbo.View_Tests.testMachineTypeID, dbo.View_Tests.testMachineType, dbo.View_Tests.partID, dbo.View_Tests.partName, dbo.View_Tests.partTypeID, dbo.View_Tests.partTypeName, dbo.View_Tests.manufacturerID, \r\n                         dbo.View_Tests.manufacturerName, dbo.View_Tests.clientID, dbo.View_Tests.clientName, dbo.View_Tests.userID, dbo.View_Tests.userFullName, dbo.View_Tests.vexaID, dbo.WeightTests.weight, dbo.WeightTests.temperature, \r\n                         dbo.WeightTests.humidity, dbo.WeightTests.pressure, dbo.WeightTests.notes, dbo.WeightTests.precision\r\nFROM            dbo.WeightTests RIGHT OUTER JOIN\r\n                         dbo.View_Tests ON dbo.WeightTests.testID = dbo.View_Tests.testID\r\n"
+    }
+  }
+}
