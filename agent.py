@@ -18,7 +18,6 @@
 import typer
 from rich.console import Console
 from rich.panel import Panel
-from pathlib import Path
 
 app     = typer.Typer(help="SQL Optimization Agent — local AI-powered database assistant")
 console = Console()
