@@ -32,6 +32,308 @@ def _banner():
 
 
 
+
+
+# ============================================================
+# PHASE 3.3 COMMANDS — shadow DB sandbox
+# ============================================================
+
+@app.command()
+def sandbox_test(
+    migration:   int  = typer.Option(None,  "--migration",   "-m", help="Test a specific migration number"),
+    all_pending: bool = typer.Option(False, "--all-pending",       help="Test all pending migrations"),
+    bak:         str  = typer.Option(None,  "--bak",         "-b", help="Path to .bak file (overrides config.py)"),
+    threshold:   float= typer.Option(30.0,  "--threshold",   "-t", help="Regression threshold % (default 30)"),
+    keep:        bool = typer.Option(False, "--keep",              help="Keep shadow DB on failure for inspection"),
+):
+    """
+    Test migrations against a shadow copy of your database before deploying.
+
+    Creates a shadow DB from your .bak, applies changes there,
+    benchmarks, runs regression check — then destroys the shadow.
+    Deployment package is only generated if ALL checks pass.
+
+    Examples:
+        python agent.py sandbox-test --all-pending
+        python agent.py sandbox-test --migration 4
+        python agent.py sandbox-test --all-pending --bak C:\\Backups\\AcmeDev.bak
+        python agent.py sandbox-test --all-pending --threshold 20
+    """
+    _banner()
+    from tools.sandbox import run_sandbox_test, print_sandbox_result
+    from tools.migrator import list_migrations, get_pending_migrations
+    from tools.history  import get_history
+
+    # Collect SQL statements from migrations
+    if migration:
+        migrations = [m for m in list_migrations() if m["number"] == migration]
+        if not migrations:
+            console.print(f"[red]✗ Migration {migration:03d} not found[/red]")
+            raise typer.Exit(1)
+    elif all_pending:
+        migrations = get_pending_migrations()
+        if not migrations:
+            console.print("[yellow]No pending migrations found.[/yellow]")
+            console.print("[dim]Run an optimization first to generate migrations.[/dim]")
+            raise typer.Exit(0)
+    else:
+        console.print("[red]✗ Provide --migration N or --all-pending[/red]")
+        raise typer.Exit(1)
+
+    console.print(f"[cyan]Testing {len(migrations)} migration(s)[/cyan]")
+
+    # Collect apply SQL from migration files
+    import re
+    from pathlib import Path
+    from config import MIGRATIONS_DIR
+    from tools.reporter import _extract_apply_section
+
+    sql_statements = []
+    for m in migrations:
+        mig_file = Path(MIGRATIONS_DIR) / m["filename"]
+        if mig_file.exists():
+            apply_sql = _extract_apply_section(mig_file.read_text(encoding="utf-8"))
+            if apply_sql and "No apply SQL" not in apply_sql:
+                sql_statements.append(apply_sql)
+
+    if not sql_statements:
+        console.print("[yellow]⚠ No SQL statements found in migrations to test[/yellow]")
+        console.print("[dim]Migrations may contain only query optimizations (no schema changes)[/dim]")
+        raise typer.Exit(0)
+
+    # Build regression queries from history
+    history_runs = get_history(limit=10)
+    regression_queries = []
+    for run in history_runs:
+        if run.get("after_ms") and run.get("query_preview"):
+            regression_queries.append({
+                "label":       run.get("label") or run["query_preview"][:30],
+                "sql":         run["query_preview"],
+                "baseline_ms": run["after_ms"],
+            })
+
+    result = run_sandbox_test(
+        sql_statements     = sql_statements,
+        regression_queries = regression_queries[:5],  # top 5 from history
+        bak_path           = bak,
+        threshold_pct      = threshold,
+        keep_on_failure    = keep,
+    )
+
+    print_sandbox_result(result)
+
+    if result["safe_to_deploy"]:
+        console.print("\n[dim]Generate deployment package with:[/dim]")
+        console.print("  [cyan]python agent.py deploy[/cyan]")
+    else:
+        raise typer.Exit(1)
+
+
+@app.command()
+def sandbox_create(
+    bak: str = typer.Option(None, "--bak", "-b", help="Path to .bak (overrides config.py)"),
+):
+    """
+    Manually create a shadow database from your .bak file.
+    Use this for manual inspection or iterative testing.
+
+    Example:
+        python agent.py sandbox-create
+        python agent.py sandbox-create --bak C:\\Backups\\AcmeDev.bak
+    """
+    _banner()
+    from tools.sandbox import create, _shadow_name
+    shadow = _shadow_name()
+    console.print(f"[cyan]Creating shadow:[/cyan] {shadow}")
+    create(bak_path=bak)
+    console.print(f"\n[dim]Connect in SSMS to test queries against: {shadow}[/dim]")
+    console.print(f"[dim]Destroy when done: python agent.py sandbox-destroy[/dim]")
+
+
+@app.command()
+def sandbox_run(
+    query: str = typer.Argument(..., help="SQL query to run against the shadow DB"),
+):
+    """
+    Run a query against the current shadow database and show timing.
+
+    Example:
+        python agent.py sandbox-run "SELECT * FROM vw_dashboard WHERE machine_id=1"
+    """
+    _banner()
+    from tools.sandbox import benchmark, _shadow_name, _shadow_exists
+
+    shadow = _shadow_name()
+    if not _shadow_exists(shadow):
+        console.print(f"[red]✗ No shadow DB found: {shadow}[/red]")
+        console.print("[dim]Create one first: python agent.py sandbox-create[/dim]")
+        raise typer.Exit(1)
+
+    console.print(f"[cyan]Running against:[/cyan] {shadow}\n")
+    result = benchmark(
+        [{"label": "query", "sql": query}],
+        shadow_name=shadow,
+        runs=5,
+    )
+
+    if result["results"] and result["results"][0].get("success"):
+        r = result["results"][0]
+        console.print(f"  avg: [green]{r['avg_ms']}ms[/green]  "
+                      f"min: {r['min_ms']}ms  max: {r['max_ms']}ms")
+    else:
+        console.print("[red]✗ Query failed against shadow DB[/red]")
+        if result["results"]:
+            console.print(f"  Error: {result['results'][0].get('error')}")
+
+
+@app.command()
+def sandbox_destroy(
+    name: str = typer.Option(None, "--name", "-n",
+                             help="Shadow name to destroy (default: today\'s shadow)"),
+):
+    """
+    Destroy the shadow database and free disk space.
+
+    Example:
+        python agent.py sandbox-destroy
+        python agent.py sandbox-destroy --name AcmeDev_Shadow_20260320
+    """
+    _banner()
+    from tools.sandbox import destroy, list_shadows, _shadow_name
+
+    if not name:
+        shadows = list_shadows()
+        if not shadows:
+            console.print("[yellow]No shadow databases found[/yellow]")
+            return
+        if len(shadows) == 1:
+            name = shadows[0]["name"]
+        else:
+            console.print("[bold]Shadow databases found:[/bold]")
+            for s in shadows:
+                console.print(f"  [cyan]{s['name']}[/cyan]  ({s['created']})  {s['state']}")
+            console.print("\n[dim]Specify which to destroy: python agent.py sandbox-destroy --name <name>[/dim]")
+            return
+
+    console.print(f"[cyan]Destroying:[/cyan] {name}")
+    destroyed = destroy(name)
+    if not destroyed:
+        console.print("[yellow]⚠ Could not destroy — it may not exist or SQL Server has active connections[/yellow]")
+
+
+@app.command()
+def sandbox_list():
+    """List all shadow databases currently on the server."""
+    _banner()
+    from tools.sandbox import list_shadows
+    from rich.table import Table as RTable
+
+    shadows = list_shadows()
+    if not shadows:
+        console.print("[dim]No shadow databases found[/dim]")
+        return
+
+    table = RTable(show_header=True, header_style="bold cyan")
+    table.add_column("Shadow Name",  min_width=35)
+    table.add_column("Created",      style="dim")
+    table.add_column("State",        justify="center")
+
+    for s in shadows:
+        state = (
+            "[green]ONLINE[/green]" if s["state"] == "ONLINE"
+            else f"[red]{s['state']}[/red]"
+        )
+        table.add_row(s["name"], s["created"], state)
+
+    console.print(table)
+    console.print(
+        f"\n[dim]Destroy with: python agent.py sandbox-destroy --name <name>[/dim]"
+    )
+
+
+# ============================================================
+# PHASE 3.1 COMMANDS — production standards
+# ============================================================
+
+@app.command()
+def check():
+    """
+    Run all configuration and connectivity checks.
+    Always run this first on a new machine or after changing config.py.
+
+    Checks:
+      • config.py fields are set (not placeholders)
+      • SQL Server is reachable and database exists
+      • Required permissions (VIEW DATABASE STATE)
+      • Ollama is running and models are pulled
+      • All directories are writable
+      • Migration registry is valid
+      • History database is accessible
+      • Schema snapshot age
+
+    Example:
+        python agent.py check
+    """
+    _banner()
+    from tools.config_validator import run_checks
+    passed = run_checks()
+    if not passed:
+        raise typer.Exit(1)
+
+
+@app.command()
+def logs(
+    lines:  int  = typer.Option(50,    "--lines",  "-n", help="Number of lines to show"),
+    level:  str  = typer.Option(None,  "--level",  "-l", help="Filter: ERROR, WARNING, INFO, DEBUG"),
+    stats:  bool = typer.Option(False, "--stats",       help="Show log statistics instead"),
+):
+    """
+    View the agent log file.
+
+    Examples:
+        python agent.py logs
+        python agent.py logs --level ERROR
+        python agent.py logs --lines 100
+        python agent.py logs --stats
+    """
+    _banner()
+    from tools.app_logger import get_recent_log_lines, get_log_stats, _get_log_dir
+    from pathlib import Path as LPath
+
+    if stats:
+        s = get_log_stats()
+        console.print(f"\n[bold]Log Statistics — {s['log_date']}[/bold]")
+        console.print(f"  [red]Errors:  {s['error_count']}[/red]")
+        console.print(f"  [yellow]Warnings: {s['warning_count']}[/yellow]")
+        console.print(f"  [green]Info:    {s['info_count']}[/green]")
+        console.print(f"  [dim]Debug:   {s['debug_count']}[/dim]")
+        console.print(f"  [dim]Total:   {s['total_lines']}[/dim]")
+
+        log_dir = _get_log_dir()
+        console.print(f"\n[dim]Log directory: {log_dir}[/dim]")
+        return
+
+    log_lines = get_recent_log_lines(n=lines, level=level.upper() if level else None)
+
+    if not log_lines:
+        console.print("[yellow]No log entries found.[/yellow]")
+        console.print("[dim]Log file is created on first pipeline run.[/dim]")
+        return
+
+    console.print(f"[dim]Showing last {len(log_lines)} lines"
+                  + (f" (level: {level.upper()})" if level else "") + "[/dim]\n")
+
+    for line in log_lines:
+        if " ERROR    " in line:
+            console.print(f"[red]{line}[/red]")
+        elif " WARNING  " in line:
+            console.print(f"[yellow]{line}[/yellow]")
+        elif " INFO     " in line:
+            console.print(f"[dim]{line}[/dim]")
+        else:
+            console.print(f"[dim]{line}[/dim]")
+
+
 # ============================================================
 # FULL-RUN PIPELINE — single command does everything
 # ============================================================
@@ -43,6 +345,8 @@ def full_run(
     runs:        int  = typer.Option(None,  "--runs",      "-r", help="Benchmark runs per query (default from config.py)"),
     no_deploy:   bool = typer.Option(False, "--no-deploy",       help="Skip deployment package generation"),
     label:       str  = typer.Option("",    "--label",     "-l", help="Short name for this run (used in filenames)"),
+    safe:        bool = typer.Option(False, "--safe",      "-s", help="Test in shadow DB sandbox before generating deploy package"),
+    bak:         str  = typer.Option(None,  "--bak",            help="Path to .bak for sandbox (with --safe)"),
 ):
     """
     Full pipeline: optimize → benchmark → migrate → report → deploy package.
@@ -53,7 +357,10 @@ def full_run(
     Batch folder:
         python agent.py full-run --folder queries/
 
-    Skip deployment package (just optimize + benchmark + migrate):
+    With sandbox testing (recommended for client deployments):
+        python agent.py full-run --query "SELECT ..." --safe
+
+    Skip deployment package:
         python agent.py full-run --query "SELECT ..." --no-deploy
     """
     _banner()
@@ -71,12 +378,45 @@ def full_run(
     from tools.pipeline import run_single, run_batch
 
     if query:
-        run_single(
+        result = run_single(
             query          = query,
             label          = label,
             benchmark_runs = runs,
-            skip_deploy    = no_deploy,
+            skip_deploy    = no_deploy or safe,  # sandbox handles deploy when --safe
         )
+
+        # If --safe and optimization produced index scripts, run sandbox test
+        if safe and result.get("success"):
+            opt = result.get("optimization", {}) or {}
+            index_scripts = opt.get("index_scripts", [])
+            if index_scripts:
+                console.print("\n[bold cyan]--safe flag: running sandbox test before deploying[/bold cyan]")
+                from tools.sandbox import run_sandbox_test, print_sandbox_result
+                from tools.history import get_history
+
+                history = get_history(limit=5)
+                regression_queries = [
+                    {"label": r.get("label") or r["query_preview"][:30],
+                     "sql":   r["query_preview"],
+                     "baseline_ms": r["after_ms"]}
+                    for r in history if r.get("after_ms")
+                ]
+
+                sandbox_result = run_sandbox_test(
+                    sql_statements     = index_scripts,
+                    regression_queries = regression_queries[:5],
+                    bak_path           = bak,
+                )
+                print_sandbox_result(sandbox_result)
+
+                if sandbox_result["safe_to_deploy"] and not no_deploy:
+                    from tools.reporter import generate_deployment_package
+                    generate_deployment_package()
+            else:
+                console.print("[dim]--safe: no schema changes to sandbox test[/dim]")
+                if not no_deploy:
+                    from tools.reporter import generate_deployment_package
+                    generate_deployment_package()
     else:
         run_batch(
             folder         = folder,
