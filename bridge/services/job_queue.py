@@ -308,12 +308,13 @@ def _dispatch(job: JobState) -> dict:
 
     elif t == "sandbox_test":
         from tools.sandbox import run_sandbox_test
-        return run_sandbox_test(
-            sql_statements    = p.get("sql_statements", []),
+        result = run_sandbox_test(
+            sql_statements     = p.get("sql_statements", []),
             regression_queries = p.get("regression_queries", []),
-            bak_path          = p.get("bak_path"),
-            threshold_pct     = p.get("threshold_pct", 30.0),
+            bak_path           = p.get("bak_path"),
+            threshold_pct      = p.get("threshold_pct", 30.0),
         )
+        return result
 
     elif t == "watch":
         from tools.watcher import run_watch

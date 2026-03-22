@@ -21,6 +21,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from bridge.routers import jobs, schema, system, history, migrations
+from bridge.routers import deploy, sandbox
 from bridge.services.hardware import HardwareMonitor
 
 app = FastAPI(
@@ -44,6 +45,8 @@ app.include_router(schema.router)
 app.include_router(jobs.router)
 app.include_router(history.router)
 app.include_router(migrations.router)
+app.include_router(deploy.router)
+app.include_router(sandbox.router)
 
 
 @app.get("/api/health")
