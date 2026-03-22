@@ -1648,7 +1648,105 @@ def new_client(
 
 
 # ============================================================
-# Entry point
+# V4 WEB UI — serve command
 # ============================================================
+
+@app.command()
+def serve(
+    host:         str  = typer.Option("127.0.0.1", "--host",    "-h", help="Host to bind to"),
+    port:         int  = typer.Option(8000,         "--port",    "-p", help="FastAPI port"),
+    dev:          bool = typer.Option(True,          "--dev",          help="Also start Vite dev server"),
+    open_browser: bool = typer.Option(True,          "--open",         help="Open browser after startup"),
+    frontend_port:int  = typer.Option(5173,          "--ui-port",      help="Vite dev server port"),
+):
+    """
+    Start the V4 Web UI.
+
+    Dev mode (default):
+        FastAPI on :8000  +  Vite dev server on :5173
+        Open http://localhost:5173 in browser
+
+    Production mode (--no-dev):
+        Run `npm run build` in web/ first, then:
+        FastAPI on :8000 serves web/dist/ as static files
+        Open http://localhost:8000 in browser
+
+    Examples:
+        python agent.py serve
+        python agent.py serve --no-dev
+        python agent.py serve --port 9000 --no-open
+    """
+    import subprocess as _sp
+    import threading  as _th
+    import time       as _t
+    import webbrowser as _wb
+    from pathlib import Path as _P
+
+    _banner()
+    console.print(f"[bold cyan]Starting SQL Agent V4 Web UI[/bold cyan]")
+    console.print(f"[dim]FastAPI: http://{host}:{port}[/dim]")
+
+    web_dir = _P(__file__).parent / "web"
+
+    def _run_uvicorn():
+        import uvicorn
+        uvicorn.run(
+            "bridge.main:app",
+            host=host,
+            port=port,
+            reload=False,
+            log_level="warning",
+        )
+
+    uvicorn_thread = _th.Thread(target=_run_uvicorn, daemon=True)
+    uvicorn_thread.start()
+    console.print(f"  [green]✓[/green] FastAPI bridge running on http://{host}:{port}")
+
+    vite_proc = None
+    if dev:
+        if not web_dir.exists():
+            console.print(
+                f"[yellow]⚠ web/ folder not found at {web_dir}[/yellow]\n"
+                "  Run: npm install (inside web/) to set up the frontend first."
+            )
+        else:
+            node_modules = web_dir / "node_modules"
+            if not node_modules.exists():
+                console.print("[yellow]⚠ node_modules missing — running npm install...[/yellow]")
+                _sp.run(["npm", "install"], cwd=str(web_dir), check=True, shell=True)
+
+            vite_proc = _sp.Popen(
+                ["npm", "run", "dev"],
+                cwd=str(web_dir),
+                stdout=_sp.DEVNULL,
+                stderr=_sp.DEVNULL,
+                shell=True
+            )
+            console.print(
+                f"  [green]✓[/green] Vite dev server starting on "
+                f"http://localhost:{frontend_port}"
+            )
+
+    if open_browser:
+        url = f"http://localhost:{frontend_port}" if dev else f"http://{host}:{port}"
+        def _open():
+            _t.sleep(2.5)
+            _wb.open(url)
+            console.print(f"\n  [cyan]→ Opened:[/cyan] {url}")
+        _th.Thread(target=_open, daemon=True).start()
+
+    console.print(
+        "\n[dim]Press Ctrl+C to stop all servers[/dim]\n"
+        "[dim]API docs: http://localhost:8000/api/docs[/dim]"
+    )
+
+    try:
+        while True:
+            _t.sleep(1)
+    except KeyboardInterrupt:
+        console.print("\n[dim]Shutting down...[/dim]")
+        if vite_proc:
+            vite_proc.terminate()
+
 if __name__ == "__main__":
     app()

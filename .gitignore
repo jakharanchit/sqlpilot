@@ -20,6 +20,7 @@ reports/
 scheduler/
 queries/
 plans/
+docs/
 
 # ── Python ───────────────────────────────────────────
 __pycache__/
@@ -44,3 +45,11 @@ build/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# ── Node.js ──────────────────────────────────────────
+node_modules/
+web/node_modules/
+
+# ── Vite ─────────────────────────────────────────────
+web/.vite/
+web/dist/
