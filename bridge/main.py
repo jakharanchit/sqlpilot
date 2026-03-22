@@ -20,7 +20,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from bridge.routers import jobs, schema, system
+from bridge.routers import jobs, schema, system, history, migrations
 from bridge.services.hardware import HardwareMonitor
 
 app = FastAPI(
@@ -42,6 +42,8 @@ app.add_middleware(
 app.include_router(system.router)
 app.include_router(schema.router)
 app.include_router(jobs.router)
+app.include_router(history.router)
+app.include_router(migrations.router)
 
 
 @app.get("/api/health")
@@ -64,12 +66,16 @@ def shutdown_event():
 
 
 # ── Serve React build (production) ───────────────────────────────────────────
+from fastapi.responses import FileResponse
 _STATIC = Path(__file__).parent / "static"
-if _STATIC.exists():
-    app.mount("/", StaticFiles(directory=str(_STATIC), html=True), name="static")
-    @app.get("/{full_path:path}", include_in_schema=False)
 
+if _STATIC.exists():
+    @app.get("/{full_path:path}", include_in_schema=False)
     async def serve_spa(full_path: str):
         """Serve the React SPA for any non-API route."""
-        index = STATIC_DIR / "index.html"
+        path = _STATIC / full_path
+        if path.is_file():
+            return FileResponse(path)
+        
+        index = _STATIC / "index.html"
         return FileResponse(index)

@@ -1,31 +1,47 @@
-// ── System types ─────────────────────────────────────────────────────────────
+// ============================================================
+// types/index.ts
+// All shared TypeScript types for the SQL Optimization Agent UI.
+// Phase 1 + Phase 2 types — DO NOT REMOVE
+// Phase 3 types appended at bottom
+// ============================================================
 
-export interface HardwareStats {
-  cpu_pct:       number;
-  ram_used_gb:   number;
-  ram_total_gb:  number;
-  ram_pct:       number;
-  gpu_pct:       number | null;
-  vram_used_gb:  number | null;
-  vram_total_gb: number | null;
-  vram_pct:      number | null;
-  gpu_name:      string | null;
-  inference_active: boolean;
-  polled_at:     string;
+// ── Phase 1 ────────────────────────────────────────────────
+
+export interface SystemStats {
+  cpu_pct:        number;
+  ram_pct:        number;
+  ram_used_gb:    number;
+  ram_total_gb:   number;
+  gpu_pct:        number | null;
+  gpu_vram_pct:   number | null;
+  gpu_vram_used:  number | null;
+  gpu_vram_total: number | null;
+  gpu_temp:       number | null;
+  disk_pct:       number;
+  disk_free_gb:   number;
+  ollama_running: boolean;
+  db_connected:   boolean;
+  timestamp:      string;
 }
 
-export interface SystemCheck {
-  db_connected:    boolean;
-  ollama_running:  boolean;
-  models_ready:    boolean;
-  active_client:   string;
-  warnings:        string[];
-  errors:          string[];
+export interface CheckResult {
+  name:     string;
+  category: string;
+  passed:   boolean;
+  message:  string;
+  fix:      string;
+  critical: boolean;
+  warning:  boolean;
 }
 
-// ── Schema types ─────────────────────────────────────────────────────────────
+export interface SchemaTable {
+  table_name:           string;
+  estimated_row_count:  number | string;
+  columns:              SchemaColumn[];
+  indexes:              SchemaIndex[];
+}
 
-export interface ColumnDef {
+export interface SchemaColumn {
   name:        string;
   type:        string;
   nullable:    string;
@@ -33,7 +49,7 @@ export interface ColumnDef {
   max_length:  number | null;
 }
 
-export interface IndexDef {
+export interface SchemaIndex {
   name:             string;
   type:             string;
   unique:           boolean;
@@ -41,124 +57,26 @@ export interface IndexDef {
   included_columns: string | null;
 }
 
-export interface TableSchema {
-  table_name:           string;
-  columns:              ColumnDef[];
-  indexes:              IndexDef[];
-  estimated_row_count:  number | string;
+export interface ViewDefinition {
+  view_name:          string;
+  definition:         string;
+  referenced_tables:  string[];
 }
 
-export interface ViewDef {
-  view_name:         string;
-  definition:        string;
-  referenced_tables: string[];
-}
+// ── Phase 2 ────────────────────────────────────────────────
 
-// ── Client types ──────────────────────────────────────────────────────────────
+export type JobStatus = 'queued' | 'running' | 'complete' | 'failed' | 'cancelled' | 'completed';
+export type JobType   = 'full_run' | 'analyze' | 'batch' | 'benchmark';
 
-export interface ClientSummary {
-  name:         string;
-  display_name: string;
-  database:     string;
-  server:       string;
-  migrations:   number;
-  runs:         number;
-  active:       boolean;
-  created:      string;
-}
-
-// ── History types ─────────────────────────────────────────────────────────────
-
-export interface RunRecord {
-  id:              number;
-  timestamp:       string;
-  client:          string;
-  run_type:        string;
-  label:           string | null;
-  query_preview:   string | null;
-  tables_involved: string | null;
-  before_ms:       number | null;
-  after_ms:        number | null;
-  improvement_pct: number | null;
-  speedup:         number | null;
-  migration_number: number | null;
-  success:         number;
-}
-
-// ── Job types ─────────────────────────────────────────────────────────────────
-
-export type JobType =
-  | "full_run"
-  | "analyze"
-  | "benchmark"
-  | "sandbox_test"
-  | "watch"
-  | "deploy";
-
-export type JobStatus =
-  | "queued"
-  | "running"
-  | "completed"
-  | "failed"
-  | "cancelled";
-
-export interface JobSummary {
-  job_id:       string;
-  type:         JobType;
-  status:       JobStatus;
-  created_at:   string;
-  started_at:   string | null;
-  completed_at: string | null;
-  error:        string | null;
-  current_step: number;
-  total_steps:  number;
-  step_label:   string;
-}
-
-export interface JobDetail extends JobSummary {
-  params: Record<string, any>;
-  result: JobResult | null;
-}
-
-export interface JobResult {
-  success:      boolean;
-  optimization?: OptimizationResult;
-  benchmark?:   BenchmarkResult;
-  migration?:   MigrationRef;
-  report_path?: string;
-  errors?:      string[];
-}
-
-export interface OptimizationResult {
-  original_query:   string;
-  optimized_query:  string;
-  diagnosis:        string;
-  index_scripts:    string[];
-  log_path?:        string;
-  migration?:       MigrationRef;
-}
-
-export interface BenchmarkResult {
-  label:           string;
-  before: {
-    avg_ms:   number;
-    min_ms:   number;
-    max_ms:   number;
-    p50_ms:   number;
-    std_ms:   number;
-    row_count: number;
-  };
-  after: {
-    avg_ms:   number;
-    min_ms:   number;
-    max_ms:   number;
-    p50_ms:   number;
-    std_ms:   number;
-    row_count: number;
-  };
-  improvement_pct: number;
-  speedup:         number;
-  row_mismatch:    boolean;
+export interface JobRequest {
+  type:            JobType;
+  query?:          string;
+  folder?:         string;
+  label?:          string;
+  benchmark_runs?: number;
+  skip_deploy?:    boolean;
+  safe?:           boolean;
+  [key: string]: any;
 }
 
 export interface MigrationRef {
@@ -168,68 +86,144 @@ export interface MigrationRef {
   status:   string;
 }
 
-// ── SSE event types ───────────────────────────────────────────────────────────
-
-export interface SSELogEvent {
-  type: "log";
-  line: string;
-  ts:   string;
+export interface JobResult {
+  success:        boolean;
+  optimization?:  any;
+  benchmark?: {
+    before:           { avg_ms: number; min_ms: number; max_ms: number; row_count: number };
+    after:            { avg_ms: number; min_ms: number; max_ms: number; row_count: number };
+    improvement_pct:  number;
+    speedup:          number;
+    row_mismatch:     boolean;
+  };
+  migration?:     MigrationRef | null;
+  errors:         string[];
+  history_id?:    number;
 }
 
-export interface SSEStepEvent {
-  type:  "step";
-  step:  number;
-  total: number;
-  label: string;
+export interface Job {
+  job_id:       string;
+  status:       JobStatus;
+  type:         JobType;
+  created_at:   string;
+  started_at:   string | null;
+  finished_at:  string | null;
+  request:      JobRequest;
+  result:       JobResult | null;
+  current_step: number;
+  total_steps:  number;
+  step_label:   string;
+  log_lines:    string[];
+  error:        string | null;
 }
 
-export interface SSECompleteEvent {
-  type:   "complete";
-  result: JobResult;
+export interface SSEEvent {
+  type:    'step' | 'log' | 'complete' | 'error';
+  payload?: any;
 }
 
-export interface SSEErrorEvent {
-  type:    "error";
-  message: string;
+// ── Phase 3 — History & Migrations ─────────────────────────
+
+// Run history record — maps 1:1 to history.db runs table
+export interface RunRecord {
+  id:               number;
+  timestamp:        string;
+  client:           string;
+  run_type:         string;
+  label:            string | null;
+  query_preview:    string | null;
+  tables_involved:  string | null;
+  before_ms:        number | null;
+  after_ms:         number | null;
+  improvement_pct:  number | null;
+  speedup:          number | null;
+  migration_number: number | null;
+  success:          number;   // 1 = success, 0 = failed (SQLite boolean)
 }
 
-export interface SSEPingEvent {
-  type: "ping";
+// History stats — from get_stats()
+export interface HistoryStats {
+  total_runs:        number;
+  successful_runs:   number;
+  avg_improvement:   number | null;
+  best_improvement:  number | null;
+  worst_improvement: number | null;
+  total_migrations:  number;
+  queries_tracked:   number;
+  tables_touched:    number;
 }
 
-export type SSEEvent =
-  | SSELogEvent
-  | SSEStepEvent
-  | SSECompleteEvent
-  | SSEErrorEvent
-  | SSEPingEvent;
+// Trend point — one entry in a trend series (oldest first)
+export interface TrendPoint {
+  id:               number;
+  timestamp:        string;
+  before_ms:        number | null;
+  after_ms:         number | null;
+  improvement_pct:  number | null;
+  label:            string | null;
+  migration_number: number | null;
+}
 
-// ── Log line (frontend display) ───────────────────────────────────────────────
+// Run comparison — diff of two runs
+export interface RunComparison {
+  run_a: RunRecord;
+  run_b: RunRecord;
+  diff: {
+    before_ms?:       { run_a: number; run_b: number; delta: number; direction: string };
+    after_ms?:        { run_a: number; run_b: number; delta: number; direction: string };
+    improvement_pct?: { run_a: number; run_b: number; delta: number; direction: string };
+    speedup?:         { run_a: number; run_b: number; delta: number; direction: string };
+  };
+}
+
+// Migration list entry (from registry.json)
+export interface Migration {
+  number:          number;
+  filename:        string;
+  description:     string;
+  date:            string;
+  client:          string;
+  tables_affected: string[];
+  reason:          string;
+  before_ms:       number | null;
+  after_ms:        number | null;
+  improvement_pct: number | null;
+  status:          'pending' | 'applied' | 'rolled_back';
+  applied_to:      string[];
+  applied_date?:   string;
+  rollback_date?:  string;
+}
+
+// ── Missing Types added for TS compilation ─────────────────
+export type JobDetail = Job;
+export type JobSummary = Job;
 
 export interface LogLine {
   line: string;
-  ts:   string;
-  kind: "log" | "step" | "error";
+  ts?: string;
+  kind: 'log' | 'step' | 'error' | 'success' | 'warn' | 'info' | 'dim' | 'section';
 }
 
-// ── Job submit params ─────────────────────────────────────────────────────────
+export type SSEStepEvent = {
+  type: 'step';
+  step: number;
+  total: number;
+  label: string;
+};
 
-export interface FullRunParams {
-  query:          string;
-  label?:         string;
-  benchmark_runs?: number | null;
-  safe?:          boolean;
-  no_deploy?:     boolean;
-}
+export type SSELogEvent = {
+  type: 'log';
+  line: string;
+  ts?: string;
+};
 
-export interface AnalyzeParams {
-  query: string;
-  label?: string;
-}
+export type AnalyzeParams = any;
+export type FullRunParams = any;
+export type BenchmarkParams = any;
 
-export interface BenchmarkParams {
-  before: string;
-  after:  string;
-  label?: string;
-  runs?:  number;
+export interface ClientSummary {
+  name: string;
+  display_name?: string;
+  server?: string;
+  database?: string;
 }

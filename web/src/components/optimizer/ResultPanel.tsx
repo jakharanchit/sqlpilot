@@ -181,7 +181,7 @@ export function ResultPanel({ result, status, error }: Props) {
             {(opt?.index_scripts ?? []).length === 0 ? (
               <div className="rp-no-content">No CREATE INDEX scripts in this result</div>
             ) : (
-              opt!.index_scripts.map((script, i) => (
+              opt!.index_scripts.map((script: any, i: number) => (
                 <div key={i} className="rp-index-item">
                   <div className="rp-index-header">
                     <span>Index {i + 1}</span>

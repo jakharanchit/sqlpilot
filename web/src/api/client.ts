@@ -38,6 +38,8 @@ async function request<T>(
   return res.json() as Promise<T>;
 }
 
+export const apiFetch = request;
+
 export const api = {
   get:    <T>(path: string)                    => request<T>(path),
   post:   <T>(path: string, body: unknown)     => request<T>(path, { method: "POST",  body: JSON.stringify(body) }),
