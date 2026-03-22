@@ -53,3 +53,5 @@ web/node_modules/
 # ── Vite ─────────────────────────────────────────────
 web/.vite/
 web/dist/
+bridge/static/
+jobs.db

@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse
 
 from bridge.services.hardware import get_current_stats, set_poll_interval
 
-router = APIRouter()
+router = APIRouter(prefix="/api/system", tags=["system"])
 
 
 # ── /api/system/stats ─────────────────────────────────────────────────────────

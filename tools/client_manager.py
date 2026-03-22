@@ -48,15 +48,15 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
-from config import BASE_DIR, PROJECTS_DIR, DB_CONFIG
+import config
 from tools.app_logger import get_logger
 from tools.error_handler import ConfigError, AgentError
 
 console = Console()
 log     = get_logger("client_manager")
 
-ACTIVE_CLIENT_FILE = Path(BASE_DIR) / ".active_client"
-TEMPLATE_DIR       = Path(PROJECTS_DIR) / "_template"
+ACTIVE_CLIENT_FILE = Path(config.BASE_DIR) / ".active_client"
+TEMPLATE_DIR       = Path(config.PROJECTS_DIR) / "_template"
 
 
 # ============================================================

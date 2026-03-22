@@ -9,7 +9,7 @@ GET /api/schema/view/{name}     — view DDL + referenced tables
 
 from fastapi import APIRouter, HTTPException
 
-router = APIRouter()
+router = APIRouter(prefix="/api/schema", tags=["schema"])
 
 
 def _import_schema():

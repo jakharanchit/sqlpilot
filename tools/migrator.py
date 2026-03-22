@@ -192,7 +192,7 @@ def create_migration(
 -- Migration: {number:03d}
 -- Description: {description}
 -- Date: {timestamp}
--- Client: {ACTIVE_CLIENT}
+-- Client: {_GLOBAL_CLIENT}
 -- Tables affected: {tables_text}
 -- Reason: {reason_text}
 -- {bench_block.strip()}

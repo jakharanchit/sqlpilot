@@ -47,21 +47,37 @@ def temp_project(tmp_path, monkeypatch):
     """
     dirs = {
         "BASE_DIR":        str(tmp_path),
-        "MIGRATIONS_DIR":  str(tmp_path / "migrations"),
-        "REPORTS_DIR":     str(tmp_path / "reports"),
-        "DEPLOYMENTS_DIR": str(tmp_path / "deployments"),
-        "SNAPSHOTS_DIR":   str(tmp_path / "snapshots"),
-        "HISTORY_DB":      str(tmp_path / "history.db"),
-        "PLANS_DIR":       str(tmp_path / "plans"),
+        "PROJECTS_DIR":    str(tmp_path / "projects"),
+        "MIGRATIONS_DIR":  str(tmp_path / "projects" / "client_example" / "migrations"),
+        "REPORTS_DIR":     str(tmp_path / "projects" / "client_example" / "reports"),
+        "DEPLOYMENTS_DIR": str(tmp_path / "projects" / "client_example" / "deployments"),
+        "SNAPSHOTS_DIR":   str(tmp_path / "projects" / "client_example" / "snapshots"),
+        "HISTORY_DB":      str(tmp_path / "projects" / "client_example" / "history.db"),
+        "PLANS_DIR":       str(tmp_path / "projects" / "client_example" / "plans"),
     }
 
     for d in dirs.values():
-        Path(d).mkdir(parents=True, exist_ok=True)
+        Path(d).parent.mkdir(parents=True, exist_ok=True)
+        if not d.endswith(".db") and not d.endswith(".json"):
+            Path(d).mkdir(parents=True, exist_ok=True)
 
     # Patch config module paths
     import config as cfg
     for attr, val in dirs.items():
         monkeypatch.setattr(cfg, attr, val)
+
+    # Also patch modules that might have `from config import ...`
+    import tools.client_manager as cm
+    monkeypatch.setattr(cm, "ACTIVE_CLIENT_FILE", Path(dirs["BASE_DIR"]) / ".active_client")
+    monkeypatch.setattr(cm, "TEMPLATE_DIR", Path(dirs["PROJECTS_DIR"]) / "_template")
+
+    import tools.migrator as mg
+    monkeypatch.setattr(mg, "_GLOBAL_MIGRATIONS_DIR", dirs["MIGRATIONS_DIR"])
+    monkeypatch.setattr(mg, "_GLOBAL_CLIENT", "client_example")
+
+    import tools.history as hs
+    monkeypatch.setattr(hs, "_GLOBAL_HISTORY_DB", dirs["HISTORY_DB"])
+    monkeypatch.setattr(hs, "_GLOBAL_CLIENT", "client_example")
 
     # Also patch runs/ dir references in logger
     runs_dir = tmp_path / "runs"

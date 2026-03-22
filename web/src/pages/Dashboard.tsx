@@ -7,7 +7,6 @@ import { HardwareGauges }   from "@/components/dashboard/HardwareGauges";
 import { ActiveJobCard }    from "@/components/dashboard/ActiveJobCard";
 import { RecentRunsPanel }  from "@/components/dashboard/RecentRunsPanel";
 import { useSystemStats }   from "@/hooks/useSystemStats";
-import { systemApi }        from "@/api/system";
 import { useClientStore }   from "@/store/clientStore";
 
 // Kick off stats polling as soon as the Dashboard mounts
