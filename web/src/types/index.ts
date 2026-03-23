@@ -444,3 +444,52 @@ export interface PlanFromQueryRequest {
   query:  string;
   actual: boolean;   // true = run query and get actual plan; false = estimated only
 }
+
+// ── Phase 7 — Settings ────────────────────────────────────────────────────────
+
+/** Database connection config section (maps to DB_CONFIG in config.py). */
+export interface DbConfig {
+  server:             string;
+  database:           string;
+  driver:             string;
+  trusted_connection: 'yes' | 'no';
+  username:           string;   // empty string when using Windows Auth
+  password:           string;   // empty string in GET (never exposed); send empty to leave unchanged
+}
+
+/** Ollama model names section (maps to MODELS in config.py). */
+export interface ModelsConfig {
+  optimizer: string;   // e.g. "qwen2.5-coder:14b"
+  reasoner:  string;   // e.g. "deepseek-r1:14b"
+}
+
+/** Shadow DB sandbox section. */
+export interface SandboxConfig {
+  bak_path:   string;
+  data_dir:   string;
+  timeout_s:  number;
+}
+
+/** Agent behaviour flags section. */
+export interface AgentConfig {
+  benchmark_runs:   number;
+  auto_commit_git:  boolean;
+  save_reports:     boolean;
+}
+
+/** Full settings payload — what GET /api/settings returns. */
+export interface AllSettings {
+  db:      DbConfig;
+  ollama:  { base_url: string; models: ModelsConfig };
+  sandbox: SandboxConfig;
+  agent:   AgentConfig;
+  // read-only display fields
+  active_client: string;
+  config_path:   string;   // absolute path to config.py on disk
+}
+
+/** Result of Test Connection / Test Ollama buttons. */
+export interface ConnectivityResult {
+  ok:      boolean;
+  message: string;   // e.g. "Connected to AcmeDev on SQL Server 2019" or error detail
+}
