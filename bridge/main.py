@@ -21,13 +21,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from bridge.routers import jobs, schema, system, history, migrations
-from bridge.routers import deploy, sandbox, clients, models
+from bridge.routers import deploy, sandbox, clients, models, plan
 from bridge.services.hardware import HardwareMonitor
 
 app = FastAPI(
     title       = "SQL Optimization Agent API",
     description = "Bridge between the React UI and the local Python CLI tools",
-    version     = "5.0.0",
+    version     = "6.0.0",
 )
 
 # ── CORS (dev: allow Vite dev server) ────────────────────────────────────────
@@ -49,6 +49,7 @@ app.include_router(deploy.router)
 app.include_router(sandbox.router)
 app.include_router(clients.router)
 app.include_router(models.router)
+app.include_router(plan.router)
 
 @app.get("/api/health")
 def health():

@@ -389,3 +389,58 @@ export interface UpdateClientRequest {
   notes?: string;
 }
 
+// ── Phase 6 — Plan Visualizer ─────────────────────────────────────────────────
+// APPEND this block to the bottom of web/src/types/index.ts
+// Do NOT remove or rename any existing types above this section.
+
+// Severity of a plan operator problem
+export type OperatorSeverity = 'HIGH' | 'MEDIUM' | 'INFO' | null;
+
+// One node in the operator tree (used by D3)
+export interface PlanOperator {
+  id:         string;          // unique id within this plan (generated)
+  name:       string;          // "Nested Loops", "Index Seek", "Table Scan", etc.
+  cost:       number;          // EstimatedTotalSubtreeCost
+  cost_pct:   number;          // % of total plan cost (0–100)
+  est_rows:   number;          // EstimateRows
+  act_rows:   number | null;   // ActualRows (only in actual plans)
+  severity:   OperatorSeverity;
+  reason:     string;          // e.g. "Entire table read — no index used"
+  // index / object info when present
+  object?:    string;          // table or index name
+  seek_pred?: string;          // seek predicates summary
+  children:   PlanOperator[];  // direct children in tree
+}
+
+// Warning from the plan (implicit conversions, no join predicate, tempdb spill)
+export interface PlanWarning {
+  type:   string;   // "ImplicitConversion" | "NoJoinPredicate" | "TempDbSpill"
+  detail: string;
+}
+
+// Missing index hint emitted by SQL Server
+export interface MissingIndexHint {
+  impact:  string;   // e.g. "87.5"
+  columns: string[]; // e.g. ["EQUALITY(machine_id)", "INCLUDE(value, timestamp)"]
+}
+
+// Full structured plan returned by the bridge
+export interface StructuredPlan {
+  plan_type:        'actual' | 'estimated';
+  elapsed_ms:       number | null;
+  row_count:        number | null;
+  total_cost:       number;
+  operator_count:   number;
+  tree:             PlanOperator;     // root of the operator tree
+  warnings:         PlanWarning[];
+  missing_indexes:  MissingIndexHint[];
+  // flat lists for summary panels
+  flagged:          Array<PlanOperator & { severity: 'HIGH' | 'MEDIUM' | 'INFO' }>;
+  query:            string;           // the original query analyzed
+}
+
+// Request body for plan analysis from query
+export interface PlanFromQueryRequest {
+  query:  string;
+  actual: boolean;   // true = run query and get actual plan; false = estimated only
+}
