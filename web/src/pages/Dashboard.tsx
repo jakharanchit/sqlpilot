@@ -1,6 +1,6 @@
 // src/pages/Dashboard.tsx
 import { useEffect } from "react";
-import { TopBar }           from "@/components/layout/TopBar";
+import TopBar           from "@/components/layout/TopBar";
 import { PageShell }        from "@/components/layout/PageShell";
 import { SystemStatusRow }  from "@/components/dashboard/SystemStatusRow";
 import { HardwareGauges }   from "@/components/dashboard/HardwareGauges";

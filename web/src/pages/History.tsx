@@ -1,4 +1,4 @@
-import { TopBar } from "@/components/layout/TopBar";
+import TopBar from "@/components/layout/TopBar";
 import { PageShell } from "@/components/layout/PageShell";
 
 import { useState, useEffect } from 'react';

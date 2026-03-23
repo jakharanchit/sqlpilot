@@ -1,8 +1,5 @@
 // ============================================================
 // types/index.ts
-// All shared TypeScript types for the SQL Optimization Agent UI.
-// Phase 1 + Phase 2 types — DO NOT REMOVE
-// Phase 3 types appended at bottom
 // ============================================================
 
 // ── Phase 1 ────────────────────────────────────────────────
@@ -66,7 +63,7 @@ export interface ViewDefinition {
 // ── Phase 2 ────────────────────────────────────────────────
 
 export type JobStatus = 'queued' | 'running' | 'complete' | 'failed' | 'cancelled' | 'completed';
-export type JobType = 'full_run' | 'analyze' | 'batch' | 'benchmark' | 'sandbox_test';
+export type JobType = 'full_run' | 'analyze' | 'batch' | 'benchmark' | 'sandbox_test' | 'pull_model';
 
 export interface JobRequest {
   type: JobType;
@@ -77,6 +74,10 @@ export interface JobRequest {
   skip_deploy?: boolean;
   safe?: boolean;
   [key: string]: any;
+  sql_statements?: string[];
+  bak_path?: string;
+  threshold_pct?: number;
+  model_name?: string;
 }
 
 export interface MigrationRef {
@@ -99,6 +100,10 @@ export interface JobResult {
   migration?: MigrationRef | null;
   errors: string[];
   history_id?: number;
+  passed?: boolean;
+  safe_to_deploy?: boolean;
+  model_name?: string;
+  status?: string;
 }
 
 export interface Job {
@@ -289,3 +294,98 @@ export interface DeployPackage {
   migrations: Migration[];
   created_at: string;
 }
+
+// ── Phase 5 — Model Manager ───────────────────────────────────────────────────
+
+export interface OllamaModel {
+  name: string;       // "qwen2.5-coder:14b"
+  size: number;       // bytes
+  size_gb: string;       // "8.2 GB"
+  digest: string;       // sha256 hash prefix
+  modified_at: string;       // ISO timestamp
+  family?: string;       // "qwen2", "deepseek", etc.
+  parameter_size?: string;       // "14B"
+  quantization?: string;       // "Q4_K_M"
+}
+
+export interface RunningModel {
+  name: string;
+  size_vram: number;    // bytes
+  size_vram_gb: string;   // "8.2 GB"
+  expires_at: string;   // ISO timestamp
+}
+
+export interface ActiveModels {
+  optimizer: string;   // MODELS["optimizer"]
+  reasoner: string;   // MODELS["reasoner"]
+  optimizer_available: boolean;
+  reasoner_available: boolean;
+}
+
+export interface PullProgress {
+  status: string;
+  completed?: number;
+  total?: number;
+  pct?: number;
+}
+
+// ── Phase 5 — Client Manager ──────────────────────────────────────────────────
+
+export interface ClientRecord {
+  name: string;
+  display_name: string;
+  created: string;
+  database: string;
+  server: string;
+  bak_path: string;
+  migrations: number;
+  runs: number;
+  active: boolean;
+}
+
+export interface ClientConfig {
+  name: string;
+  display_name: string;
+  created: string;
+  notes: string;
+  db_config: {
+    server: string;
+    database: string;
+    driver: string;
+    trusted_connection: string;
+    username?: string;
+  };
+  bak_path: string;
+  sandbox_data_dir: string;
+  sandbox_timeout: number;
+}
+
+export interface ClientPaths {
+  name: string;
+  base: string;
+  migrations: string;
+  reports: string;
+  deployments: string;
+  snapshots: string;
+  runs: string;
+  history_db: string;
+  config_file: string;
+}
+
+export interface NewClientRequest {
+  name: string;
+  display_name?: string;
+  server?: string;
+  database?: string;
+  bak_path?: string;
+  notes?: string;
+}
+
+export interface UpdateClientRequest {
+  display_name?: string;
+  server?: string;
+  database?: string;
+  bak_path?: string;
+  notes?: string;
+}
+

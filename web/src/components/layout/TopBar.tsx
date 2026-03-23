@@ -6,7 +6,7 @@ interface Props {
   actions?: React.ReactNode;
 }
 
-export function TopBar({ title, actions }: Props) {
+export default function TopBar({ title, actions }: Props) {
   const lastUpdated = useSystemStore(s => s.lastUpdated);
 
   const timeStr = lastUpdated

@@ -49,6 +49,8 @@ from rich.panel import Panel
 from rich.table import Table
 
 import config
+PROJECTS_DIR = config.PROJECTS_DIR
+DB_CONFIG = config.DB_CONFIG
 from tools.app_logger import get_logger
 from tools.error_handler import ConfigError, AgentError
 
@@ -56,7 +58,7 @@ console = Console()
 log     = get_logger("client_manager")
 
 ACTIVE_CLIENT_FILE = Path(config.BASE_DIR) / ".active_client"
-TEMPLATE_DIR       = Path(config.PROJECTS_DIR) / "_template"
+TEMPLATE_DIR       = Path(PROJECTS_DIR) / "_template"
 
 
 # ============================================================

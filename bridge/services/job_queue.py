@@ -327,6 +327,62 @@ def _dispatch(job: JobState) -> dict:
             include_all = p.get("include_all", False),
         )
 
+    # ── pull_model (Phase 5) ──────────────────────────────────────────────
+    elif t == "pull_model":
+        import requests as _req
+        import json as _json
+
+        model_name = p.get("model_name", "")
+        _emit(job, "log", {"line": f"Pulling model: {model_name}"})
+
+        try:
+            from config import OLLAMA_BASE_URL
+        except ImportError:
+            OLLAMA_BASE_URL = "http://localhost:11434"
+
+        r = _req.post(
+            f"{OLLAMA_BASE_URL}/api/pull",
+            json    = {"name": model_name},
+            stream  = True,
+            timeout = 600,   # pulling can take several minutes
+        )
+        r.raise_for_status()
+
+        last_pct = -1
+        for line in r.iter_lines():
+            if not line:
+                continue
+            data      = _json.loads(line)
+            status    = data.get("status", "")
+            completed = data.get("completed", 0)
+            total     = data.get("total", 0)
+
+            if total and completed:
+                pct = int((completed / total) * 100)
+                if pct != last_pct:
+                    last_pct = pct
+                    _emit(job, "step", {
+                        "step":  pct,
+                        "total": 100,
+                        "label": f"{status} — {pct}%",
+                    })
+                    _emit(job, "log", {
+                        "line": (
+                            f"  {status}: {pct}% "
+                            f"({completed / 1e9:.1f} GB / {total / 1e9:.1f} GB)"
+                        )
+                    })
+            else:
+                _emit(job, "log", {"line": f"  {status}"})
+
+            if status == "success":
+                break
+
+        job.result = {"model_name": model_name, "status": "pulled"}
+        job.status = "complete"
+        _emit(job, "complete", {"result": job.result})
+
+
     else:
         raise ValueError(f"Unknown job type: {t}")
 

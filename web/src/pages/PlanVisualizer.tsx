@@ -1,5 +1,5 @@
 // src/pages/PlanVisualizer.tsx — Phase 6
-import { TopBar }     from "@/components/layout/TopBar";
+import TopBar     from "@/components/layout/TopBar";
 import { PageShell }  from "@/components/layout/PageShell";
 import { EmptyState } from "@/components/shared/EmptyState";
 

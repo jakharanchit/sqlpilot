@@ -1,5 +1,5 @@
 // src/pages/Settings.tsx — Phase 7
-import { TopBar }     from "@/components/layout/TopBar";
+import TopBar     from "@/components/layout/TopBar";
 import { PageShell }  from "@/components/layout/PageShell";
 import { EmptyState } from "@/components/shared/EmptyState";
 

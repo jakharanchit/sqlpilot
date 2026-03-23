@@ -20,7 +20,7 @@ reports/
 scheduler/
 queries/
 plans/
-docs/
+# docs/
 
 # ── Python ───────────────────────────────────────────
 __pycache__/
